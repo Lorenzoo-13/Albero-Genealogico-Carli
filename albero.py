@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di stampa con riduzione forzata per pagina unica A4
+# CSS di stampa ottimizzato per centrare e rimpicciolire l'intero albero in un unico foglio A4
 st.markdown("""
     <style>
     @media print {
@@ -37,21 +37,24 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Centra il grafico */
+        /* Centra perfettamente il grafico nel foglio */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
             height: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
+            margin: 0 !important;
         }
         
-        /* Rimpicciolisce proporzionalmente l'albero al 45% per farlo stare in un foglio */
+        /* Adatta e scala l'intero albero per mostrarlo per intero al centro */
         [data-testid="stGraphvizChart"] svg {
-            transform: scale(0.45) !important;
-            transform-origin: center center !important;
-            max-width: none !important;
-            max-height: none !important;
+            max-width: 100% !important;
+            max-height: 190mm !important;
+            width: auto !important;
+            height: auto !important;
+            transform: scale(0.38);
+            transform-origin: center center;
         }
     }
     </style>
@@ -232,12 +235,24 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz extra-compatta
+    # Configurazione Graphviz compatta per contenere tutti i rami
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
         rankdir="LR", 
-        nodesep="0.15",        # Riduce la distanza verticale tra i nodi
-        ranksep="0.4"          # Riduce la distanza orizzontale tra le generazioni
+        size="11,8", 
+        ratio="compress",
+        nodesep="0.12",
+        ranksep="0.35"
+    )
+    
+    dot.attr(
+        "node", 
+        shape="box", 
+        style="rounded,filled", 
+        fillcolor="#f8f9fa", 
+        fontname="Helvetica", 
+        fontsize="8.5", 
+        margin="0.06,0.03"
     )
     
     dot.attr(
