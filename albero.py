@@ -78,6 +78,7 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=True):
     data_nascita = st.text_input("Data di Nascita (gg/mm/aaaa)")
     comune = st.text_input("Comune di Nascita")
     cf = st.text_input("Codice Fiscale")
+    telefono = st.text_input("Numero di Telefono")
     deceduto = st.checkbox("Deceduto/a")
     
     opzioni_genitori = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id")]
@@ -96,6 +97,7 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=True):
                     "nascita": data_nascita,
                     "comune": comune,
                     "cf": cf,
+                    "telefono": telefono,
                     "deceduto": "SÌ" if deceduto else "NO",
                     "genitore": "" if genitore_scelto == "Nessuno (Capostipite)" else genitore_scelto,
                     "note": ""
@@ -145,6 +147,8 @@ if st.session_state.membri:
             label += f"<br/>Comune: {m['comune']}"
         if m.get("cf"):
             label += f"<br/>CF: {m['cf']}"
+        if m.get("telefono"):
+            label += f"<br/>Tel: {m['telefono']}"
         if m.get("note"):
             label += f"<br/>Note: {m['note']}"
         if m.get("deceduto") == "SÌ" or m.get("deceduto") is True:
