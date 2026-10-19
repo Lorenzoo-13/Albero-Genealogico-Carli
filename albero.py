@@ -7,12 +7,27 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS per la stampa in orizzontale (Landscape)
+# CSS per la stampa in un unico foglio orizzontale
 st.markdown("""
     <style>
     @media print {
         @page {
             size: landscape;
+            margin: 5mm;
+        }
+        html, body, [data-testid="stAppViewContainer"] {
+            width: 100% !important;
+            height: 100% !important;
+            overflow: visible !important;
+        }
+        .main .block-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        svg {
+            max-width: 100% !important;
+            height: auto !important;
         }
         [data-testid="stSidebar"], 
         header, 
@@ -20,10 +35,6 @@ st.markdown("""
         .stButton, 
         .stDownloadButton {
             display: none !important;
-        }
-        .main .block-container {
-            max-width: 100% !important;
-            padding: 0 !important;
         }
     }
     </style>
@@ -244,4 +255,3 @@ if st.session_state.membri:
     st.graphviz_chart(dot, use_container_width=True)
 else:
     st.info("L'albero è vuoto. Aggiungi il primo membro dalla barra laterale.")
-    
