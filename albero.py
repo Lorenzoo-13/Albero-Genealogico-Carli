@@ -7,34 +7,46 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS per forzare la stampa in un unico foglio orizzontale (Landscape)
+# CSS di Stampa avanzato per forzare L'ALBERO in UN SOLO FOGLIO A4 Orizzontale
 st.markdown("""
     <style>
     @media print {
         @page {
-            size: landscape;
+            size: A4 landscape;
             margin: 5mm;
         }
-        html, body, [data-testid="stAppViewContainer"] {
-            width: 100% !important;
-            height: 100% !important;
-            overflow: visible !important;
-        }
-        .main .block-container {
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        svg {
-            max-width: 100% !important;
-            height: auto !important;
-        }
+        /* Nasconde elementi non utili alla stampa */
         [data-testid="stSidebar"], 
         header, 
         footer, 
         .stButton, 
-        .stDownloadButton {
+        .stDownloadButton,
+        h1 {
             display: none !important;
+        }
+        
+        /* Reset contenitore principale per sfruttare al 100% la pagina */
+        html, body, [data-testid="stAppViewContainer"], .main, .block-container {
+            width: 100% !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        
+        /* Adatta il grafico SVG / Graphviz all'altezza e larghezza del foglio */
+        [data-testid="stGraphvizChart"] {
+            width: 100% !important;
+            height: 95vh !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+        [data-testid="stGraphvizChart"] svg {
+            max-width: 100% !important;
+            max-height: 95vh !important;
+            width: auto !important;
+            height: auto !important;
         }
     }
     </style>
@@ -65,7 +77,6 @@ def carica_dati():
         header = rows[0]
         data = []
         for row in rows[1:]:
-            # Allinea la riga con le colonne dell'intestazione
             row_data = row + [""] * (len(header) - len(row))
             record = dict(zip(header, row_data))
             if record.get("id"):
@@ -216,27 +227,45 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # rankdir="LR" rende l'albero orizzontale (da sinistra a destra)
+    # Configurazione Graphviz con vincoli precisi per adattarsi a 1 foglio A4 orizzontale
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
-    dot.attr(rankdir="LR", size="12,8")
-    dot.attr("node", shape="box", style="rounded,filled", fillcolor="#f0f2f6", fontname="Helvetica")
+    dot.attr(
+        rankdir="LR", 
+        size="10,7!",          # Forza le dimensioni massime all'A4 orizzontale
+        ratio="fill", 
+        nodesep="0.3",         # Spazio ridotto tra nodi vicini
+        ranksep="0.5"          # Spazio ridotto tra le generazioni
+    )
+    
+    # Stile nodi compatto e chiaro
+    dot.attr(
+        "node", 
+        shape="box", 
+        style="rounded,filled", 
+        fillcolor="#f8f9fa", 
+        fontname="Helvetica", 
+        fontsize="10",         # Dimensione testo ottimale
+        margin="0.1,0.05"      # Padding interno compatto
+    )
 
     for m in st.session_state.membri:
         if not m.get("id"):
             continue
-        label = f"<b>{m['nome']} {m['cognome']}</b>"
+        
+        # Generazione label HTML pulita e chiara
+        label = f"<font point-size='11'><b>{m['nome']} {m['cognome']}</b></font>"
         if m.get("nascita"):
-            label += f"<br/>Nato/a: {m['nascita']}"
+            label += f"<br/><font color='#555555'>Nato/a: {m['nascita']}</font>"
         if m.get("comune"):
-            label += f"<br/>Comune: {m['comune']}"
+            label += f"<br/><font color='#555555'>Comune: {m['comune']}</font>"
         if m.get("cf"):
-            label += f"<br/>CF: {m['cf']}"
+            label += f"<br/><font color='#555555'>CF: {m['cf']}</font>"
         if m.get("telefono"):
-            label += f"<br/>Tel: {m['telefono']}"
+            label += f"<br/><font color='#555555'>Tel: {m['telefono']}</font>"
         if m.get("note"):
-            label += f"<br/>Note: {m['note']}"
+            label += f"<br/><font color='#555555'>Note: {m['note']}</font>"
         if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
-            label += "<br/><b>[DECEDUTO/A]</b>"
+            label += "<br/><font color='#d9534f'><b>[DECEDUTO/A]</b></font>"
 
         dot.node(str(m["id"]), label=f"<{label}>")
 
