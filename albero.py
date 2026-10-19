@@ -7,10 +7,13 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS per la stampa
+# CSS per la stampa in orizzontale (Landscape)
 st.markdown("""
     <style>
     @media print {
+        @page {
+            size: landscape;
+        }
         [data-testid="stSidebar"], 
         header, 
         footer, 
@@ -59,8 +62,19 @@ def salva_dati(membri):
         sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet = client.open_by_url(sheet_url).sheet1
         sheet.clear()
+        
+        colonne = ["id", "nome", "cognome", "nascita", "comune", "cf", "telefono", "deceduto", "genitore", "note"]
+        
+        if not membri:
+            sheet.update([colonne])
+            return
+
         df = pd.DataFrame(membri)
-        # Inserisce intestazioni e dati nel foglio
+        for col in colonne:
+            if col not in df.columns:
+                df[col] = ""
+        df = df[colonne]
+        
         sheet.update([df.columns.values.tolist()] + df.values.tolist())
     except Exception as e:
         st.error(f"Errore nel salvataggio su Google Sheets: {e}")
@@ -115,7 +129,6 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
         lista_ids = [m["id"] for m in st.session_state.membri if m.get("id")]
         persona_da_modificare_id = st.selectbox("Seleziona Persona da Modificare", lista_ids, key="mod_select")
         
-        # Recupera i dati attuali della persona selezionata
         membro_target = next((m for m in st.session_state.membri if m.get("id") == persona_da_modificare_id), None)
         
         if membro_target:
@@ -129,7 +142,6 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
             is_deceduto = True if membro_target.get("deceduto") in ["SÌ", True, "True"] else False
             mod_deceduto = st.checkbox("Deceduto/a", value=is_deceduto, key="mod_deceduto")
             
-            # Lista genitori escludendo se stessi
             altri_membri = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
             genitore_attuale = membro_target.get("genitore", "")
             idx_genitore = altri_membri.index(genitore_attuale) if genitore_attuale in altri_membri else 0
@@ -139,17 +151,14 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
                 nuovo_id = f"{mod_nome} {mod_cognome}"
                 old_id = membro_target["id"]
                 
-                # Se il nome/cognome è cambiato, verifica che il nuovo ID non sia già occupato
                 if nuovo_id != old_id and any(m.get("id") == nuovo_id for m in st.session_state.membri):
                     st.sidebar.error("Esiste già un'altra persona con questo Nome e Cognome!")
                 else:
-                    # Aggiorna i riferimenti ai figli se l'ID (nome/cognome) è cambiato
                     if nuovo_id != old_id:
                         for m in st.session_state.membri:
                             if m.get("genitore") == old_id:
                                 m["genitore"] = nuovo_id
                     
-                    # Aggiorna i dati del membro
                     membro_target["id"] = nuovo_id
                     membro_target["nome"] = mod_nome
                     membro_target["cognome"] = mod_cognome
@@ -191,8 +200,9 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
+    # rankdir="LR" imposta l'albero in orizzontale (da sinistra a destra)
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
-    dot.attr(rankdir="TB", size="12,8")
+    dot.attr(rankdir="LR", size="12,8")
     dot.attr("node", shape="box", style="rounded,filled", fillcolor="#f0f2f6", fontname="Helvetica")
 
     for m in st.session_state.membri:
@@ -234,3 +244,4 @@ if st.session_state.membri:
     st.graphviz_chart(dot, use_container_width=True)
 else:
     st.info("L'albero è vuoto. Aggiungi il primo membro dalla barra laterale.")
+    
