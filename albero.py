@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa avanzato per forzare L'ALBERO in UN SOLO FOGLIO A4 Orizzontale (Sfondo Bianco)
+# CSS di Stampa ottimizzato per rimpicciolire e far entrare tutto l'albero in un solo foglio A4
 st.markdown("""
     <style>
     @media print {
@@ -16,18 +16,17 @@ st.markdown("""
             margin: 5mm;
         }
         
-        /* Forza lo sfondo bianco e rimuove il tema scuro */
-        html, body, [data-testid="stAppViewContainer"], .main, .block-container, [data-testid="stHeader"] {
+        /* Forza lo sfondo bianco e rimuove elementi superflui */
+        html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
             width: 100% !important;
             height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
         }
         
-        /* Nasconde componenti Streamlit superflui */
         [data-testid="stSidebar"], 
         header, 
         footer, 
@@ -38,10 +37,9 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Centra e adatta il grafico dell'albero al foglio A4 */
+        /* Ridimensiona e adatta matematicamente l'intero albero per farlo stare in un foglio unico */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
-            height: 95vh !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
@@ -49,10 +47,12 @@ st.markdown("""
         }
         
         [data-testid="stGraphvizChart"] svg {
-            max-width: 100% !important;
-            max-height: 92vh !important;
+            max-width: 95vw !important;
+            max-height: 85vh !important;
             width: auto !important;
             height: auto !important;
+            transform: scale(0.65); /* Rimpicciolisce l'albero per farlo rientrare perfettamente */
+            transform-origin: center center;
         }
     }
     </style>
