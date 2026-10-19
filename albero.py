@@ -7,13 +7,24 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa con ridimensionamento (scaling) per far entrare tutto in un solo foglio
+# CSS di Stampa avanzato per forzare L'ALBERO in UN SOLO FOGLIO A4 Orizzontale (Sfondo Bianco)
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 landscape;
-            margin: 3mm;
+            margin: 5mm;
+        }
+        
+        /* Forza lo sfondo bianco e rimuove il tema scuro */
+        html, body, [data-testid="stAppViewContainer"], .main, .block-container, [data-testid="stHeader"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
         }
         
         /* Nasconde componenti Streamlit superflui */
@@ -22,23 +33,26 @@ st.markdown("""
         footer, 
         .stButton, 
         .stDownloadButton,
-        h1 {
+        h1,
+        [data-testid="stHeader"] {
             display: none !important;
         }
         
-        /* Riduce la scala dell'intero contenuto per far rientrare l'altezza dell'albero */
-        html, body, [data-testid="stAppViewContainer"], .main, .block-container {
-            width: 180% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            transform: scale(0.55);
-            transform-origin: top left;
-        }
-        
+        /* Centra e adatta il grafico dell'albero al foglio A4 */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
+            height: 95vh !important;
             display: flex !important;
-            justify-content: flex-start !important;
+            justify-content: center !important;
+            align-items: center !important;
+            margin: 0 auto !important;
+        }
+        
+        [data-testid="stGraphvizChart"] svg {
+            max-width: 100% !important;
+            max-height: 92vh !important;
+            width: auto !important;
+            height: auto !important;
         }
     }
     </style>
