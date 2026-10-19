@@ -71,18 +71,18 @@ if "membri" not in st.session_state:
 # --- SIDEBAR: GESTIONE ---
 st.sidebar.title("📌 Gestione Albero")
 
-# Aggiungi Persona
-with st.sidebar.expander("➕ Aggiungi Persona", expanded=True):
-    nome = st.text_input("Nome")
-    cognome = st.text_input("Cognome")
-    data_nascita = st.text_input("Data di Nascita (gg/mm/aaaa)")
-    comune = st.text_input("Comune di Nascita")
-    cf = st.text_input("Codice Fiscale")
-    telefono = st.text_input("Numero di Telefono")
-    deceduto = st.checkbox("Deceduto/a")
+# 1. Aggiungi Persona
+with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
+    nome = st.text_input("Nome", key="add_nome")
+    cognome = st.text_input("Cognome", key="add_cognome")
+    data_nascita = st.text_input("Data di Nascita (gg/mm/aaaa)", key="add_nascita")
+    comune = st.text_input("Comune di Nascita", key="add_comune")
+    cf = st.text_input("Codice Fiscale", key="add_cf")
+    telefono = st.text_input("Numero di Telefono", key="add_telefono")
+    deceduto = st.checkbox("Deceduto/a", key="add_deceduto")
     
     opzioni_genitori = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id")]
-    genitore_scelto = st.selectbox("Genitore", opzioni_genitori)
+    genitore_scelto = st.selectbox("Genitore", opzioni_genitori, key="add_genitore")
     
     if st.button("Aggiungi alla Famiglia"):
         if nome and cognome:
@@ -109,14 +109,72 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=True):
         else:
             st.sidebar.error("Nome e Cognome sono obbligatori!")
 
-# Rimuovi Persona
+# 2. Modifica Persona
+with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
+    if st.session_state.membri:
+        lista_ids = [m["id"] for m in st.session_state.membri if m.get("id")]
+        persona_da_modificare_id = st.selectbox("Seleziona Persona da Modificare", lista_ids, key="mod_select")
+        
+        # Recupera i dati attuali della persona selezionata
+        membro_target = next((m for m in st.session_state.membri if m.get("id") == persona_da_modificare_id), None)
+        
+        if membro_target:
+            mod_nome = st.text_input("Nome", value=str(membro_target.get("nome", "")), key="mod_nome")
+            mod_cognome = st.text_input("Cognome", value=str(membro_target.get("cognome", "")), key="mod_cognome")
+            mod_nascita = st.text_input("Data di Nascita", value=str(membro_target.get("nascita", "")), key="mod_nascita")
+            mod_comune = st.text_input("Comune di Nascita", value=str(membro_target.get("comune", "")), key="mod_comune")
+            mod_cf = st.text_input("Codice Fiscale", value=str(membro_target.get("cf", "")), key="mod_cf")
+            mod_telefono = st.text_input("Numero di Telefono", value=str(membro_target.get("telefono", "")), key="mod_telefono")
+            
+            is_deceduto = True if membro_target.get("deceduto") in ["SÌ", True, "True"] else False
+            mod_deceduto = st.checkbox("Deceduto/a", value=is_deceduto, key="mod_deceduto")
+            
+            # Lista genitori escludendo se stessi
+            altri_membri = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
+            genitore_attuale = membro_target.get("genitore", "")
+            idx_genitore = altri_membri.index(genitore_attuale) if genitore_attuale in altri_membri else 0
+            mod_genitore = st.selectbox("Genitore", altri_membri, index=idx_genitore, key="mod_genitore")
+            
+            if st.button("Salva Modifiche", type="primary"):
+                nuovo_id = f"{mod_nome} {mod_cognome}"
+                old_id = membro_target["id"]
+                
+                # Se il nome/cognome è cambiato, verifica che il nuovo ID non sia già occupato
+                if nuovo_id != old_id and any(m.get("id") == nuovo_id for m in st.session_state.membri):
+                    st.sidebar.error("Esiste già un'altra persona con questo Nome e Cognome!")
+                else:
+                    # Aggiorna i riferimenti ai figli se l'ID (nome/cognome) è cambiato
+                    if nuovo_id != old_id:
+                        for m in st.session_state.membri:
+                            if m.get("genitore") == old_id:
+                                m["genitore"] = nuovo_id
+                    
+                    # Aggiorna i dati del membro
+                    membro_target["id"] = nuovo_id
+                    membro_target["nome"] = mod_nome
+                    membro_target["cognome"] = mod_cognome
+                    membro_target["nascita"] = mod_nascita
+                    membro_target["comune"] = mod_comune
+                    membro_target["cf"] = mod_cf
+                    membro_target["telefono"] = mod_telefono
+                    membro_target["deceduto"] = "SÌ" if mod_deceduto else "NO"
+                    membro_target["genitore"] = "" if mod_genitore == "Nessuno (Capostipite)" else mod_genitore
+                    
+                    salva_dati(st.session_state.membri)
+                    st.sidebar.success("Modifiche salvate con successo!")
+                    st.rerun()
+    else:
+        st.write("Nessun membro presente da modificare.")
+
+# 3. Rimuovi Persona
 with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
     if st.session_state.membri:
         persona_da_eliminare = st.selectbox(
             "Seleziona la persona da rimuovere",
-            [m["id"] for m in st.session_state.membri if m.get("id")]
+            [m["id"] for m in st.session_state.membri if m.get("id")],
+            key="del_select"
         )
-        if st.button("Elimina Persona", type="primary"):
+        if st.button("Elimina Persona"):
             st.session_state.membri = [m for m in st.session_state.membri if m.get("id") != persona_da_eliminare]
             for m in st.session_state.membri:
                 if m.get("genitore") == persona_da_eliminare:
