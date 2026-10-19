@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS per la stampa in un unico foglio orizzontale
+# CSS per forzare la stampa in un unico foglio orizzontale (Landscape)
 st.markdown("""
     <style>
     @media print {
@@ -40,7 +40,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Connessione a Google Sheets tramite gspread e secrets di Streamlit
+# Connessione sicura a Google Sheets tramite Secrets
 @st.cache_resource
 def get_gspread_client():
     scope = [
@@ -57,12 +57,20 @@ def carica_dati():
         client = get_gspread_client()
         sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
         sheet = client.open_by_url(sheet_url).sheet1
-        data = sheet.get_all_records()
-        df = pd.DataFrame(data)
-        if df.empty:
+        
+        rows = sheet.get_all_values()
+        if not rows or len(rows) <= 1:
             return []
-        df = df.fillna("")
-        return df.to_dict(orient="records")
+        
+        header = rows[0]
+        data = []
+        for row in rows[1:]:
+            # Allinea la riga con le colonne dell'intestazione
+            row_data = row + [""] * (len(header) - len(row))
+            record = dict(zip(header, row_data))
+            if record.get("id"):
+                data.append(record)
+        return data
     except Exception as e:
         st.error(f"Errore nella lettura da Google Sheets: {e}")
         return []
@@ -76,20 +84,17 @@ def salva_dati(membri):
         
         colonne = ["id", "nome", "cognome", "nascita", "comune", "cf", "telefono", "deceduto", "genitore", "note"]
         
-        if not membri:
-            sheet.update([colonne])
-            return
-
-        df = pd.DataFrame(membri)
-        for col in colonne:
-            if col not in df.columns:
-                df[col] = ""
-        df = df[colonne]
-        
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+        rows = [colonne]
+        if membri:
+            for m in membri:
+                row = [str(m.get(col, "")) for col in colonne]
+                rows.append(row)
+            
+        sheet.update(rows)
     except Exception as e:
         st.error(f"Errore nel salvataggio su Google Sheets: {e}")
 
+# Inizializzazione sessione
 if "membri" not in st.session_state:
     st.session_state.membri = carica_dati()
 
@@ -150,7 +155,7 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
             mod_cf = st.text_input("Codice Fiscale", value=str(membro_target.get("cf", "")), key="mod_cf")
             mod_telefono = st.text_input("Numero di Telefono", value=str(membro_target.get("telefono", "")), key="mod_telefono")
             
-            is_deceduto = True if membro_target.get("deceduto") in ["SÌ", True, "True"] else False
+            is_deceduto = True if membro_target.get("deceduto") in ["SÌ", True, "True", "Sì", "si"] else False
             mod_deceduto = st.checkbox("Deceduto/a", value=is_deceduto, key="mod_deceduto")
             
             altri_membri = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
@@ -208,13 +213,10 @@ with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
 # --- VISUALIZZAZIONE GRAFICA E STAMPA ---
 st.title("🌳 Albero Genealogico Condiviso")
 
-# --- VISUALIZZAZIONE GRAFICA E STAMPA ---
-st.title("🌳 Albero Genealogico Condiviso")
-
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # rankdir="LR" imposta l'albero in orizzontale (da sinistra a destra)
+    # rankdir="LR" rende l'albero orizzontale (da sinistra a destra)
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(rankdir="LR", size="12,8")
     dot.attr("node", shape="box", style="rounded,filled", fillcolor="#f0f2f6", fontname="Helvetica")
@@ -233,7 +235,7 @@ if st.session_state.membri:
             label += f"<br/>Tel: {m['telefono']}"
         if m.get("note"):
             label += f"<br/>Note: {m['note']}"
-        if m.get("deceduto") == "SÌ" or m.get("deceduto") is True:
+        if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
             label += "<br/><b>[DECEDUTO/A]</b>"
 
         dot.node(str(m["id"]), label=f"<{label}>")
@@ -241,12 +243,10 @@ if st.session_state.membri:
         if m.get("genitore"):
             dot.edge(str(m["genitore"]), str(m["id"]))
 
-    # Generazione sicura del PNG con gestione errori
     try:
         png_bytes = dot.pipe(format="png")
     except Exception as e:
         png_bytes = None
-        st.error(f"Impossibile generare l'immagine PNG. Assicurati che 'graphviz' sia presente nel file packages.txt. Errore: {e}")
 
     with col1:
         if png_bytes:
