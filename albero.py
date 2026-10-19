@@ -7,16 +7,16 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di stampa definitivo per forzare l'adattamento automatico su un foglio A4
+# CSS di stampa con riduzione forzata per pagina unica A4
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 5mm;
         }
         
-        /* Forza lo sfondo bianco e rimuove elementi superflui */
+        /* Pulisce lo sfondo e rimuove elementi superflui */
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -24,6 +24,7 @@ st.markdown("""
             height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow: hidden !important;
         }
         
         [data-testid="stSidebar"], 
@@ -36,23 +37,21 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Contenitore principale del grafico ottimizzato per la pagina singola */
+        /* Centra il grafico */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
             height: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
         }
         
-        /* Forza l'SVG a ridimensionarsi dentro i limiti esatti del foglio */
+        /* Rimpicciolisce proporzionalmente l'albero al 45% per farlo stare in un foglio */
         [data-testid="stGraphvizChart"] svg {
-            max-width: 260mm !important;
-            max-height: 180mm !important;
-            width: 100% !important;
-            height: auto !important;
+            transform: scale(0.45) !important;
+            transform-origin: center center !important;
+            max-width: none !important;
+            max-height: none !important;
         }
     }
     </style>
