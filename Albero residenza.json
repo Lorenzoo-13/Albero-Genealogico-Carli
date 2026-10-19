@@ -1,0 +1,124 @@
+{
+    "tree_data": {
+        "id": "1",
+        "nome": "Luigi Carli ",
+        "telefono": "",
+        "data_nascita": "",
+        "residenza": "",
+        "deceduto": true,
+        "children": [
+            {
+                "id": "2",
+                "nome": "Guerrino Carli",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": true,
+                "children": [
+                    {
+                        "id": "8",
+                        "nome": "Stefano Carli",
+                        "telefono": "",
+                        "data_nascita": "",
+                        "residenza": "",
+                        "deceduto": true,
+                        "children": []
+                    }
+                ]
+            },
+            {
+                "id": "3",
+                "nome": "Romana Carli",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": true,
+                "children": [
+                    {
+                        "id": "9",
+                        "nome": "Fabio Vignotto",
+                        "telefono": "347-2708366",
+                        "data_nascita": "09-01-1968",
+                        "residenza": "Venezia ",
+                        "deceduto": false,
+                        "children": []
+                    },
+                    {
+                        "id": "10",
+                        "nome": "Maurizio Vignotto",
+                        "telefono": "",
+                        "data_nascita": "",
+                        "residenza": "",
+                        "deceduto": false,
+                        "children": []
+                    },
+                    {
+                        "id": "12",
+                        "nome": "Cinzia Vignotto",
+                        "telefono": "340-9192339 ",
+                        "data_nascita": "12-09-1958",
+                        "residenza": "",
+                        "deceduto": false,
+                        "children": []
+                    }
+                ]
+            },
+            {
+                "id": "4",
+                "nome": "Roberto Carli",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": true,
+                "children": [
+                    {
+                        "id": "13",
+                        "nome": "Omar Carli",
+                        "telefono": "338-8044722",
+                        "data_nascita": "11-04-1972",
+                        "residenza": "Venezia",
+                        "deceduto": false,
+                        "children": []
+                    },
+                    {
+                        "id": "14",
+                        "nome": "Jamir Carli",
+                        "telefono": "347-6927141",
+                        "data_nascita": "26-08-1976",
+                        "residenza": "Venezia",
+                        "deceduto": false,
+                        "children": []
+                    }
+                ]
+            },
+            {
+                "id": "5",
+                "nome": "Nuovo Membro 5",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": false,
+                "children": []
+            },
+            {
+                "id": "6",
+                "nome": "Nuovo Membro 6",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": false,
+                "children": []
+            },
+            {
+                "id": "7",
+                "nome": "Nuovo Membro 7",
+                "telefono": "",
+                "data_nascita": "",
+                "residenza": "",
+                "deceduto": false,
+                "children": []
+            }
+        ]
+    },
+    "next_id": 15
+}
