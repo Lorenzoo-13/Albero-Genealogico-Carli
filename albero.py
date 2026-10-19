@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa ottimizzato per rimpicciolire e far entrare tutto l'albero in un solo foglio A4
+# CSS di stampa definitivo per forzare l'intero albero in un unico foglio A4
 st.markdown("""
     <style>
     @media print {
@@ -16,7 +16,7 @@ st.markdown("""
             margin: 5mm;
         }
         
-        /* Forza lo sfondo bianco e rimuove elementi superflui */
+        /* Pulisce lo sfondo e rimuove elementi superflui */
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -37,22 +37,23 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Ridimensiona e adatta matematicamente l'intero albero per farlo stare in un foglio unico */
+        /* Ridimensiona l'intero blocco del grafico affinché stia esattamente in una pagina */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
+            height: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            margin: 0 auto !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
         
         [data-testid="stGraphvizChart"] svg {
-            max-width: 95vw !important;
-            max-height: 85vh !important;
+            max-width: 100% !important;
+            max-height: 90vh !important;
             width: auto !important;
             height: auto !important;
-            transform: scale(0.65); /* Rimpicciolisce l'albero per farlo rientrare perfettamente */
-            transform-origin: center center;
+            zoom: 0.5; /* Rimpicciolisce proporzionalmente tutto l'albero per farlo entrare in un foglio */
         }
     }
     </style>
