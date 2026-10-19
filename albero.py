@@ -208,6 +208,9 @@ with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
 # --- VISUALIZZAZIONE GRAFICA E STAMPA ---
 st.title("🌳 Albero Genealogico Condiviso")
 
+# --- VISUALIZZAZIONE GRAFICA E STAMPA ---
+st.title("🌳 Albero Genealogico Condiviso")
+
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
@@ -238,15 +241,24 @@ if st.session_state.membri:
         if m.get("genitore"):
             dot.edge(str(m["genitore"]), str(m["id"]))
 
-    png_bytes = dot.pipe(format="png")
+    # Generazione sicura del PNG con gestione errori
+    try:
+        png_bytes = dot.pipe(format="png")
+    except Exception as e:
+        png_bytes = None
+        st.error(f"Impossibile generare l'immagine PNG. Assicurati che 'graphviz' sia presente nel file packages.txt. Errore: {e}")
+
     with col1:
-        st.download_button(
-            label="🖼️ Scarica Immagine (PNG)",
-            data=png_bytes,
-            file_name="albero_genealogico_carli.png",
-            mime="image/png",
-            use_container_width=True
-        )
+        if png_bytes:
+            st.download_button(
+                label="🖼️ Scarica Immagine (PNG)",
+                data=png_bytes,
+                file_name="albero_genealogico_carli.png",
+                mime="image/png",
+                use_container_width=True
+            )
+        else:
+            st.button("🖼️ Scarica Immagine (PNG)", disabled=True, use_container_width=True)
     
     with col2:
         if st.button("🖨️ Stampa Pagina / Salva in PDF", use_container_width=True):
