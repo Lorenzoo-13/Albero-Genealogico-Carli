@@ -7,16 +7,16 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di stampa definitivo per forzare l'intero albero in un unico foglio A4
+# CSS di stampa definitivo per forzare l'adattamento automatico su un foglio A4
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 landscape;
-            margin: 5mm;
+            margin: 10mm;
         }
         
-        /* Pulisce lo sfondo e rimuove elementi superflui */
+        /* Forza lo sfondo bianco e rimuove elementi superflui */
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -24,7 +24,6 @@ st.markdown("""
             height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: visible !important;
         }
         
         [data-testid="stSidebar"], 
@@ -37,7 +36,7 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Ridimensiona l'intero blocco del grafico affinché stia esattamente in una pagina */
+        /* Contenitore principale del grafico ottimizzato per la pagina singola */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
             height: 100% !important;
@@ -48,12 +47,12 @@ st.markdown("""
             break-inside: avoid !important;
         }
         
+        /* Forza l'SVG a ridimensionarsi dentro i limiti esatti del foglio */
         [data-testid="stGraphvizChart"] svg {
-            max-width: 100% !important;
-            max-height: 90vh !important;
-            width: auto !important;
+            max-width: 260mm !important;
+            max-height: 180mm !important;
+            width: 100% !important;
             height: auto !important;
-            zoom: 0.5; /* Rimpicciolisce proporzionalmente tutto l'albero per farlo entrare in un foglio */
         }
     }
     </style>
