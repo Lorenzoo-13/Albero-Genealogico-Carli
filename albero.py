@@ -2,11 +2,12 @@ import streamlit as st
 import graphviz
 import streamlit.components.v1 as components
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+import gspread
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS per nascondere menu e sidebar in fase di stampa
+# CSS per la stampa
 st.markdown("""
     <style>
     @media print {
@@ -25,12 +26,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Connessione a Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+# Connessione a Google Sheets tramite gspread e secrets di Streamlit
+@st.cache_resource
+def get_gspread_client():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    client = gspread.authorize(creds)
+    return client
 
 def carica_dati():
     try:
-        df = conn.read(ttl=0)
+        client = get_gspread_client()
+        sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        sheet = client.open_by_url(sheet_url).sheet1
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
+        if df.empty:
+            return []
         df = df.fillna("")
         return df.to_dict(orient="records")
     except Exception as e:
@@ -38,8 +54,16 @@ def carica_dati():
         return []
 
 def salva_dati(membri):
-    df = pd.DataFrame(membri)
-    conn.update(data=df)
+    try:
+        client = get_gspread_client()
+        sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        sheet = client.open_by_url(sheet_url).sheet1
+        sheet.clear()
+        df = pd.DataFrame(membri)
+        # Inserisce intestazioni e dati nel foglio
+        sheet.update([df.columns.values.tolist()] + df.values.tolist())
+    except Exception as e:
+        st.error(f"Errore nel salvataggio su Google Sheets: {e}")
 
 if "membri" not in st.session_state:
     st.session_state.membri = carica_dati()

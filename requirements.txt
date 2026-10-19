@@ -1,3 +1,5 @@
 streamlit
 graphviz
-streamlit-gsheets
+pandas
+gspread
+google-auth
