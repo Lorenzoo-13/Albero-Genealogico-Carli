@@ -7,15 +7,16 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa avanzato per forzare L'ALBERO in UN SOLO FOGLIO A4 Orizzontale
+# CSS di Stampa con ridimensionamento (scaling) per far entrare tutto in un solo foglio
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 landscape;
-            margin: 5mm;
+            margin: 3mm;
         }
-        /* Nasconde elementi non utili alla stampa */
+        
+        /* Nasconde componenti Streamlit superflui */
         [data-testid="stSidebar"], 
         header, 
         footer, 
@@ -25,28 +26,19 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Reset contenitore principale per sfruttare al 100% la pagina */
+        /* Riduce la scala dell'intero contenuto per far rientrare l'altezza dell'albero */
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
-            width: 100% !important;
-            height: 100vh !important;
+            width: 180% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            transform: scale(0.55);
+            transform-origin: top left;
         }
         
-        /* Adatta il grafico SVG / Graphviz all'altezza e larghezza del foglio */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
-            height: 95vh !important;
             display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-        }
-        [data-testid="stGraphvizChart"] svg {
-            max-width: 100% !important;
-            max-height: 95vh !important;
-            width: auto !important;
-            height: auto !important;
+            justify-content: flex-start !important;
         }
     }
     </style>
@@ -227,14 +219,22 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz con vincoli precisi per adattarsi a 1 foglio A4 orizzontale
+    # Configurazione Graphviz extra-compatta
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
         rankdir="LR", 
-        size="10,7!",          # Forza le dimensioni massime all'A4 orizzontale
-        ratio="fill", 
-        nodesep="0.3",         # Spazio ridotto tra nodi vicini
-        ranksep="0.5"          # Spazio ridotto tra le generazioni
+        nodesep="0.15",        # Riduce la distanza verticale tra i nodi
+        ranksep="0.4"          # Riduce la distanza orizzontale tra le generazioni
+    )
+    
+    dot.attr(
+        "node", 
+        shape="box", 
+        style="rounded,filled", 
+        fillcolor="#f8f9fa", 
+        fontname="Helvetica", 
+        fontsize="9",          # Testo leggermente più piccolo per risparmiare spazio
+        margin="0.08,0.04"
     )
     
     # Stile nodi compatto e chiaro
