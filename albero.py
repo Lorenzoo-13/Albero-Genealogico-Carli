@@ -7,13 +7,13 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa per forzare l'adattamento dell'immagine nel foglio A4
+# CSS di Stampa per orientamento VERTICALE (A4 portrait)
 st.markdown("""
     <style>
     @media print {
         @page {
-            size: A4 landscape;
-            margin: 4mm;
+            size: A4 portrait;
+            margin: 6mm;
         }
         
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
@@ -36,14 +36,13 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Contenitore e immagine SVG forzati al 100% dell'area stampabile */
+        /* Contenitore grafico adattato alla pagina A4 verticale */
         [data-testid="stGraphvizChart"], 
-        [data-testid="stGraphvizChart"] svg,
-        [data-testid="stGraphvizChart"] img {
+        [data-testid="stGraphvizChart"] svg {
             width: 100% !important;
             max-width: 100% !important;
-            height: 95vh !important;
-            max-height: 95vh !important;
+            height: 96vh !important;
+            max-height: 96vh !important;
             object-fit: contain !important;
             margin: auto !important;
         }
@@ -226,25 +225,50 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz con scaling nativo per foglio A4
+    # Configurazione Graphviz ottimizzata per A4 VERTICALE
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
-        rankdir="LR", 
-        size="8.5,5.5!",        # Dimensione rigida massima per far rientrare tutti i rami
-        ratio="fill",           # Forzatura del ridimensionamento proporzionale
-        nodesep="0.08",         # Spaziatura tra individui estremamente compatta
-        ranksep="0.25"          # Spaziatura tra generazioni compatta
+        rankdir="LR",           # Sviluppo orizzontale delle generazioni, ma su foglio verticale
+        size="7.5,10.2!",       # Adattamento rigido al formato A4 verticale (in pollici)
+        ratio="compress",
+        nodesep="0.18",         # Distanza tra nodi dello stesso livello
+        ranksep="0.4"           # Distanza tra generazioni
     )
     
+    # Stile nodi: margini e dimensione controllati per non far uscire il testo
     dot.attr(
         "node", 
         shape="box", 
         style="rounded,filled", 
         fillcolor="#f8f9fa", 
         fontname="Helvetica", 
-        fontsize="7.5",         # Font ridotto proporzionalmente per evitare sovrapposizioni
-        margin="0.04,0.02"
+        fontsize="8", 
+        margin="0.12,0.08"
     )
+
+    for m in st.session_state.membri:
+        if not m.get("id"):
+            continue
+        
+        # Etichetta con dimensione font proporzionata per restare dentro il rettangolo
+        label = f"<font point-size='9'><b>{m['nome']} {m['cognome']}</b></font>"
+        if m.get("nascita"):
+            label += f"<br/><font point-size='7.5' color='#444444'>Nato/a: {m['nascita']}</font>"
+        if m.get("comune"):
+            label += f"<br/><font point-size='7.5' color='#444444'>Comune: {m['comune']}</font>"
+        if m.get("cf"):
+            label += f"<br/><font point-size='7' color='#444444'>CF: {m['cf']}</font>"
+        if m.get("telefono"):
+            label += f"<br/><font point-size='7.5' color='#444444'>Tel: {m['telefono']}</font>"
+        if m.get("note"):
+            label += f"<br/><font point-size='7' color='#444444'>Note: {m['note']}</font>"
+        if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
+            label += "<br/><font point-size='7.5' color='#d9534f'><b>[DECEDUTO/A]</b></font>"
+
+        dot.node(str(m["id"]), label=f"<{label}>")
+
+        if m.get("genitore"):
+            dot.edge(str(m["genitore"]), str(m["id"]))
 
     for m in st.session_state.membri:
         if not m.get("id"):
