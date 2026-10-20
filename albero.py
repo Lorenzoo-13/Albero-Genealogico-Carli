@@ -245,18 +245,20 @@ if st.session_state.membri:
         concentrate="true"     # FONDE le frecce duplicate in un'unica freccia!
     )
     
-    # Stile nodi pulito
+    # Stile nodi: margini e dimensione regolati per non far uscire il testo
     dot.attr(
         "node", 
         shape="box", 
         style="rounded,filled", 
         fillcolor="#f8f9fa", 
         fontname="Helvetica", 
-        fontsize="7.5", 
-        margin="0.1,0.06"
+        fontsize="8", 
+        margin="0.12,0.08",    # Ampio margine interno
+        width="1.8",           # Larghezza minima per garantire spazio al testo
+        fixedsize="false"      # Permette al rettangolo di allargarsi se il nome è lungo
     )
     
-    # Stile frecce: forza 1 sola freccia singola
+    # Stile frecce
     dot.attr(
         "edge",
         dir="forward",
@@ -264,12 +266,12 @@ if st.session_state.membri:
         penwidth="1.0"
     )
 
-    # Creazione dei nodi
+    # Creazione dei nodi (SOSTITUISCE QUELLO NELLO SCREENSHOT)
     for m in st.session_state.membri:
         if not m.get("id"):
             continue
         
-        # Etichetta formattata per stare dentro i rettangoli
+        # Etichetta formattata con font controllati
         label = f"<font point-size='8.5'><b>{m['nome']} {m['cognome']}</b></font>"
         if m.get("nascita"):
             label += f"<br/><font point-size='7' color='#444444'>Nato/a: {m['nascita']}</font>"
@@ -286,7 +288,7 @@ if st.session_state.membri:
 
         dot.node(str(m["id"]), label=f"<{label}>")
 
-    # Creazione dei collegamenti senza duplicati (risolve le 3 frecce)
+  # Creazione dei collegamenti senza duplicati (1 sola freccia)
     archi_aggiunti = set()
     for m in st.session_state.membri:
         genitore_id = m.get("genitore")
