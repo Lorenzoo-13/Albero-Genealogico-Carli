@@ -7,23 +7,23 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa per orientamento VERTICALE (A4 portrait)
+# CSS di Stampa ottimizzato per A4 verticale in pagina unica senza tagli
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 portrait;
-            margin: 6mm;
+            margin: 4mm;
         }
         
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
             width: 100% !important;
-            height: 100vh !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
         }
         
         [data-testid="stSidebar"], 
@@ -36,15 +36,24 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Contenitore grafico adattato alla pagina A4 verticale */
-        [data-testid="stGraphvizChart"], 
-        [data-testid="stGraphvizChart"] svg {
+        /* Contenitore grafico centrato e scalato per rientrare interamente nel foglio */
+        [data-testid="stGraphvizChart"] {
             width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            margin: 0 auto !important;
+        }
+        
+        /* Ridimensiona l'SVG per farlo stare comodamente in un solo foglio verticale */
+        [data-testid="stGraphvizChart"] svg {
             max-width: 100% !important;
-            height: 96vh !important;
-            max-height: 96vh !important;
-            object-fit: contain !important;
-            margin: auto !important;
+            max-height: 94vh !important;
+            width: auto !important;
+            height: auto !important;
+            transform: scale(0.78);
+            transform-origin: top center;
         }
     }
     </style>
@@ -225,26 +234,57 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz ottimizzata per A4 VERTICALE
+    # Configurazione Graphviz per A4 verticale, freccia singola e spaziature ridotte
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
-        rankdir="LR",           # Sviluppo orizzontale delle generazioni, ma su foglio verticale
-        size="7.5,10.2!",       # Adattamento rigido al formato A4 verticale (in pollici)
+        rankdir="LR", 
+        size="7.2,9.8!",       # Dimensioni rigorose per contenere tutto in A4 verticale
         ratio="compress",
-        nodesep="0.18",         # Distanza tra nodi dello stesso livello
-        ranksep="0.4"           # Distanza tra generazioni
+        nodesep="0.10",         # Distanza verticale ridotta per evitare lo sforamento in basso
+        ranksep="0.32"          # Distanza orizzontale tra le generazioni
     )
     
-    # Stile nodi: margini e dimensione controllati per non far uscire il testo
+    # Stile nodi pulito
     dot.attr(
         "node", 
         shape="box", 
         style="rounded,filled", 
         fillcolor="#f8f9fa", 
         fontname="Helvetica", 
-        fontsize="8", 
-        margin="0.12,0.08"
+        fontsize="7.5", 
+        margin="0.1,0.06"
     )
+    
+    # Proprietà dei collegamenti: freccia singola e pulita
+    dot.attr(
+        "edge",
+        dir="forward",          # Forza una sola direzione (freccia singola)
+        arrowsize="0.7"         # Frecce leggermente più piccole e ordinate
+    )
+
+    for m in st.session_state.membri:
+        if not m.get("id"):
+            continue
+        
+        # Etichetta formattata per stare dentro i rettangoli
+        label = f"<font point-size='8.5'><b>{m['nome']} {m['cognome']}</b></font>"
+        if m.get("nascita"):
+            label += f"<br/><font point-size='7' color='#444444'>Nato/a: {m['nascita']}</font>"
+        if m.get("comune"):
+            label += f"<br/><font point-size='7' color='#444444'>Comune: {m['comune']}</font>"
+        if m.get("cf"):
+            label += f"<br/><font point-size='6.5' color='#444444'>CF: {m['cf']}</font>"
+        if m.get("telefono"):
+            label += f"<br/><font point-size='7' color='#444444'>Tel: {m['telefono']}</font>"
+        if m.get("note"):
+            label += f"<br/><font point-size='6.5' color='#444444'>Note: {m['note']}</font>"
+        if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
+            label += "<br/><font point-size='7' color='#d9534f'><b>[DECEDUTO/A]</b></font>"
+
+        dot.node(str(m["id"]), label=f"<{label}>")
+
+        if m.get("genitore"):
+            dot.edge(str(m["genitore"]), str(m["id"]))
 
     for m in st.session_state.membri:
         if not m.get("id"):
