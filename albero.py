@@ -234,14 +234,15 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz per A4 verticale, freccia singola e spaziature ridotte
+    # Configurazione Graphviz pulita: una sola freccia e dimensioni A4 verticale
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
         rankdir="LR", 
-        size="7.2,9.8!",       # Dimensioni rigorose per contenere tutto in A4 verticale
+        size="7.0,9.2!",       # Mantiene l'albero dentro i margini A4 verticali
         ratio="compress",
-        nodesep="0.10",         # Distanza verticale ridotta per evitare lo sforamento in basso
-        ranksep="0.32"          # Distanza orizzontale tra le generazioni
+        nodesep="0.08",        # Spaziatura verticale compatta per far entrare Lidia Toniolo in fondo
+        ranksep="0.30",        # Spaziatura tra generazioni
+        concentrate="true"     # FONDE le frecce duplicate in un'unica freccia!
     )
     
     # Stile nodi pulito
@@ -255,13 +256,15 @@ if st.session_state.membri:
         margin="0.1,0.06"
     )
     
-    # Proprietà dei collegamenti: freccia singola e pulita
+    # Stile frecce: forza 1 sola freccia singola
     dot.attr(
         "edge",
-        dir="forward",          # Forza una sola direzione (freccia singola)
-        arrowsize="0.7"         # Frecce leggermente più piccole e ordinate
+        dir="forward",
+        arrowsize="0.7",
+        penwidth="1.0"
     )
 
+    # Creazione dei nodi
     for m in st.session_state.membri:
         if not m.get("id"):
             continue
@@ -283,56 +286,17 @@ if st.session_state.membri:
 
         dot.node(str(m["id"]), label=f"<{label}>")
 
-        if m.get("genitore"):
-            dot.edge(str(m["genitore"]), str(m["id"]))
-
+    # Creazione dei collegamenti senza duplicati (risolve le 3 frecce)
+    archi_aggiunti = set()
     for m in st.session_state.membri:
-        if not m.get("id"):
-            continue
+        genitore_id = m.get("genitore")
+        figlio_id = m.get("id")
         
-        # Etichetta con dimensione font proporzionata per restare dentro il rettangolo
-        label = f"<font point-size='9'><b>{m['nome']} {m['cognome']}</b></font>"
-        if m.get("nascita"):
-            label += f"<br/><font point-size='7.5' color='#444444'>Nato/a: {m['nascita']}</font>"
-        if m.get("comune"):
-            label += f"<br/><font point-size='7.5' color='#444444'>Comune: {m['comune']}</font>"
-        if m.get("cf"):
-            label += f"<br/><font point-size='7' color='#444444'>CF: {m['cf']}</font>"
-        if m.get("telefono"):
-            label += f"<br/><font point-size='7.5' color='#444444'>Tel: {m['telefono']}</font>"
-        if m.get("note"):
-            label += f"<br/><font point-size='7' color='#444444'>Note: {m['note']}</font>"
-        if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
-            label += "<br/><font point-size='7.5' color='#d9534f'><b>[DECEDUTO/A]</b></font>"
-
-        dot.node(str(m["id"]), label=f"<{label}>")
-
-        if m.get("genitore"):
-            dot.edge(str(m["genitore"]), str(m["id"]))
-
-    for m in st.session_state.membri:
-        if not m.get("id"):
-            continue
-        
-        # Generazione label HTML pulita e chiara
-        label = f"<font point-size='11'><b>{m['nome']} {m['cognome']}</b></font>"
-        if m.get("nascita"):
-            label += f"<br/><font color='#555555'>Nato/a: {m['nascita']}</font>"
-        if m.get("comune"):
-            label += f"<br/><font color='#555555'>Comune: {m['comune']}</font>"
-        if m.get("cf"):
-            label += f"<br/><font color='#555555'>CF: {m['cf']}</font>"
-        if m.get("telefono"):
-            label += f"<br/><font color='#555555'>Tel: {m['telefono']}</font>"
-        if m.get("note"):
-            label += f"<br/><font color='#555555'>Note: {m['note']}</font>"
-        if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
-            label += "<br/><font color='#d9534f'><b>[DECEDUTO/A]</b></font>"
-
-        dot.node(str(m["id"]), label=f"<{label}>")
-
-        if m.get("genitore"):
-            dot.edge(str(m["genitore"]), str(m["id"]))
+        if genitore_id and figlio_id:
+            coppia = (str(genitore_id), str(figlio_id))
+            if coppia not in archi_aggiunti:
+                dot.edge(str(genitore_id), str(figlio_id))
+                archi_aggiunti.add(coppia)
 
     try:
         png_bytes = dot.pipe(format="png")
