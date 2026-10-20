@@ -7,21 +7,20 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di stampa ottimizzato per centrare e rimpicciolire l'intero albero in un unico foglio A4
+# CSS di Stampa per forzare l'adattamento dell'immagine nel foglio A4
 st.markdown("""
     <style>
     @media print {
         @page {
             size: A4 landscape;
-            margin: 5mm;
+            margin: 4mm;
         }
         
-        /* Pulisce lo sfondo e rimuove elementi superflui */
         html, body, [data-testid="stAppViewContainer"], .main, .block-container {
             background-color: #ffffff !important;
             color: #000000 !important;
             width: 100% !important;
-            height: 100% !important;
+            height: 100vh !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
@@ -37,24 +36,16 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Centra perfettamente il grafico nel foglio */
-        [data-testid="stGraphvizChart"] {
+        /* Contenitore e immagine SVG forzati al 100% dell'area stampabile */
+        [data-testid="stGraphvizChart"], 
+        [data-testid="stGraphvizChart"] svg,
+        [data-testid="stGraphvizChart"] img {
             width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            margin: 0 !important;
-        }
-        
-        /* Adatta e scala l'intero albero per mostrarlo per intero al centro */
-        [data-testid="stGraphvizChart"] svg {
             max-width: 100% !important;
-            max-height: 190mm !important;
-            width: auto !important;
-            height: auto !important;
-            transform: scale(0.38);
-            transform-origin: center center;
+            height: 95vh !important;
+            max-height: 95vh !important;
+            object-fit: contain !important;
+            margin: auto !important;
         }
     }
     </style>
@@ -235,14 +226,14 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz compatta per contenere tutti i rami
+    # Configurazione Graphviz con scaling nativo per foglio A4
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
         rankdir="LR", 
-        size="11,8", 
-        ratio="compress",
-        nodesep="0.12",
-        ranksep="0.35"
+        size="8.5,5.5!",        # Dimensione rigida massima per far rientrare tutti i rami
+        ratio="fill",           # Forzatura del ridimensionamento proporzionale
+        nodesep="0.08",         # Spaziatura tra individui estremamente compatta
+        ranksep="0.25"          # Spaziatura tra generazioni compatta
     )
     
     dot.attr(
@@ -251,29 +242,8 @@ if st.session_state.membri:
         style="rounded,filled", 
         fillcolor="#f8f9fa", 
         fontname="Helvetica", 
-        fontsize="8.5", 
-        margin="0.06,0.03"
-    )
-    
-    dot.attr(
-        "node", 
-        shape="box", 
-        style="rounded,filled", 
-        fillcolor="#f8f9fa", 
-        fontname="Helvetica", 
-        fontsize="9",          # Testo leggermente più piccolo per risparmiare spazio
-        margin="0.08,0.04"
-    )
-    
-    # Stile nodi compatto e chiaro
-    dot.attr(
-        "node", 
-        shape="box", 
-        style="rounded,filled", 
-        fillcolor="#f8f9fa", 
-        fontname="Helvetica", 
-        fontsize="10",         # Dimensione testo ottimale
-        margin="0.1,0.05"      # Padding interno compatto
+        fontsize="7.5",         # Font ridotto proporzionalmente per evitare sovrapposizioni
+        margin="0.04,0.02"
     )
 
     for m in st.session_state.membri:
