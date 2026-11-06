@@ -1,5 +1,6 @@
 streamlit
-graphviz
 pandas
 gspread
 google-auth
+graphviz
+pyvis
