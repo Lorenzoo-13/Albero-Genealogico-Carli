@@ -223,7 +223,7 @@ st.title("Albero Genealogico Carli")
 if st.session_state.membri:
     tab_interattiva, tab_pdf = st.tabs(["Vista Interattiva (Schermo)", "Vista per Stampa e Esportazione PDF"])
     
-    # TAB 1: PYVIS INTERATTIVO (Con nodi ingranditi e leggibili)
+    # TAB 1: PYVIS INTERATTIVO
     with tab_interattiva:
         col_grafico, col_scheda = st.columns([3, 1])
 
@@ -332,7 +332,7 @@ if st.session_state.membri:
                     st.markdown(f"**Note:** {membro.get('note', 'Nessuna nota')}")
                     st.markdown("---")
 
-    # TAB 2: STAMPA E CONVERSIONE IN PDF (Con rettangoli ampi e ben leggibili)
+    # TAB 2: STAMPA E CONVERSIONE IN PDF
     with tab_pdf:
         st.subheader("Generazione PDF e Immagine per Stampa e WhatsApp")
         st.write("Questa vista mostra l'albero con tutti i dati a vista all'interno di ogni nodo ingrandito, ideale per essere scaricato e condiviso.")
@@ -362,7 +362,6 @@ if st.session_state.membri:
             if not m.get("id"):
                 continue
             
-            # Etichetta HTML dettagliata, ingrandita e chiara
             label = f"<font point-size='12'><b>{m.get('nome', '')} {m.get('cognome', '')}</b></font>"
             if m.get("ruolo_coniuge"):
                 label += f"<br/><font point-size='9' color='#0275d8'><b>({m['ruolo_coniuge']})</b></font>"
@@ -373,4 +372,58 @@ if st.session_state.membri:
             if m.get("cf"):
                 label += f"<br/><font point-size='8.5' color='#555555'>CF: {m['cf']}</font>"
             if m.get("telefono"):
-                label += f"<br/><font point-size='9' color='#333333'>Tel: {m['telefono']}</font
+                label += f"<br/><font point-size='9' color='#333333'>Tel: {m['telefono']}</font>"
+            if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
+                label += "<br/><font point-size='9' color='#d9534f'><b>DECEDUTO/A</b></font>"
+
+            dot.node(str(m["id"]), label=f"<{label}>")
+
+        archi_agg = set()
+        for m in st.session_state.membri:
+            genitore_id = m.get("genitore")
+            figlio_id = m.get("id")
+            coniuge_id = m.get("coniuge")
+            
+            if genitore_id and figlio_id:
+                coppia = (str(genitore_id), str(figlio_id))
+                if coppia not in archi_agg:
+                    dot.edge(str(genitore_id), str(figlio_id), color="#555555", weight="1")
+                    archi_agg.add(coppia)
+                    
+            if coniuge_id and figlio_id:
+                coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
+                if coppia_c not in archi_agg:
+                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
+                    archi_agg.add(coppia_c)
+
+        try:
+            pdf_bytes = dot.pipe(format="pdf")
+            png_bytes = dot.pipe(format="png")
+        except Exception as e:
+            pdf_bytes = None
+            png_bytes = None
+
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            if pdf_bytes:
+                st.download_button(
+                    label="Scarica File PDF",
+                    data=pdf_bytes,
+                    file_name="Albero_Genealogico_Carli.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+        with col_dl2:
+            if png_bytes:
+                st.download_button(
+                    label="Scarica Immagine PNG (Consigliato per WhatsApp)",
+                    data=png_bytes,
+                    file_name="Albero_Genealogico_Carli.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+
+        st.graphviz_chart(dot, use_container_width=True)
+
+else:
+    st.info("L'albero è vuoto. Aggiungi il primo membro dalla barra laterale.")
