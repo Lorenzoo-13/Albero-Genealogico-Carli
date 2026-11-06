@@ -220,16 +220,4 @@ with st.sidebar.expander("Rimuovi Persona", expanded=False):
 # --- VISUALIZZAZIONE E ESPORTAZIONE ---
 st.title("Albero Genealogico Carli")
 
-if st.session_state.membri:
-    tab_interattiva, tab_pdf = st.tabs(["Vista Interattiva (Schermo)", "Vista per Stampa e Esportazione PDF"])
-    
-    # TAB 1: PYVIS INTERATTIVO
-    with tab_interattiva:
-        col_grafico, col_scheda = st.columns([3, 1])
-
-        with col_grafico:
-            net = Network(height="720px", width="100%", directed=True, notebook=False, cdn_resources='remote')
-            
-            net.set_options("""
-            {
-              "physics": {
+if st.session_state.memb
