@@ -361,19 +361,23 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Forziamo Antonietta sotto Maurizio come una figlia tramite un vincolo gerarchico invisibile
-        archi_agg = set()
+        # Raggruppamento rigoroso sullo stesso rango orizzontale (rank=same) per Maurizio e Antonietta
+        coniugi_processati = set()
         for m in st.session_state.membri:
             figlio_id = m.get("id")
             coniuge_id = m.get("coniuge")
             if coniuge_id and figlio_id:
-                if {str(figlio_id), str(coniuge_id)} == {"Maurizio Vignoto", "Antonietta Flocco"}:
-                    # Mettiamo Maurizio sopra e Antonietta sotto (come una figlia)
-                    coppia_invisibile = ("Maurizio Vignoto", "Antonietta Flocco")
-                    if coppia_invisibile not in archi_agg:
-                        dot.edge("Maurizio Vignoto", "Antonietta Flocco", style="invis", weight="1000")
-                        archi_agg.add(coppia_invisibile)
+                coppia = tuple(sorted([str(figlio_id), str(coniuge_id)]))
+                if coppia not in coniugi_processati:
+                    coniugi_processati.add(coppia)
+                    with dot.subgraph() as s:
+                        s.attr(rank="same")
+                        s.node(str(figlio_id))
+                        s.node(str(coniuge_id))
+                    # Linea invisibile orizzontale per tenerli affiancati puliti
+                    dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000")
 
+        archi_agg = set()
         for m in st.session_state.membri:
             genitore_id = m.get("genitore")
             figlio_id = m.get("id")
