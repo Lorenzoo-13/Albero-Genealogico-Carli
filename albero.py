@@ -83,7 +83,7 @@ with st.sidebar.expander("Aggiungi Persona", expanded=False):
     
     opzioni_coniugi = ["Nessuno"] + [m["id"] for m in st.session_state.membri if m.get("id")]
     coniuge_scelto = st.selectbox("Coniuge (Moglie/Marito)", opzioni_coniugi, key="add_coniuge")
-    ruolo_coniuge = st.radio("Ruolo del nuovo membro:", ["Moglie", "Marito"], key="add_ruolo_coniuge", horizontal=True)
+    ruolo_coniuge = st.radio("Ruolo del novo membro:", ["Moglie", "Marito"], key="add_ruolo_coniuge", horizontal=True)
     
     if st.button("Aggiungi alla Famiglia"):
         if nome and cognome:
@@ -361,9 +361,6 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Forziamo Antonietta ad agganciarsi direttamente alla struttura di Maurizio con un arco invisibile gerarchico
-        dot.edge("Maurizio Vignoto", "Antonietta Flocco", style="invis", weight="1000", constraint="true")
-
         archi_aggiunti = set()
         for m in st.session_state.membri:
             genitore_id = m.get("genitore")
@@ -379,6 +376,7 @@ if st.session_state.membri:
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_aggiunti:
+                    # Se gestiamo la coppia Maurizio-Antonietta, li leghiamo direttamente come coniugi con vincolo strutturale attivo
                     if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
                         dot.edge("Maurizio Vignoto", "Antonietta Flocco", dir="none", style="dashed", color="#d9534f", weight="1000", constraint="true")
                     else:
