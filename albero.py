@@ -61,11 +61,17 @@ def carica_dati():
         if not rows or len(rows) <= 1:
             return []
         
-        header = rows[0]
+        header = [h.strip().lower() for h in rows[0]]
         data = []
         for row in rows[1:]:
+            # Crea un dizionario mappando l'intestazione alla cella corrispondente
             row_data = row + [""] * (len(header) - len(row))
             record = dict(zip(header, row_data))
+            
+            # Se manca la colonna 'id' ma ci sono nome e cognome, creiamo l'id al volo
+            if not record.get("id") and record.get("nome") and record.get("cognome"):
+                record["id"] = f"{record['nome']} {record['cognome']}"
+                
             if record.get("id"):
                 data.append(record)
         return data
