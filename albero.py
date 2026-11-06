@@ -322,10 +322,10 @@ if st.session_state.membri:
         
         dot = graphviz.Digraph(comment="Albero Genealogico Stampabile", format="pdf")
         dot.attr(
-            rankdir="LR", 
+            rankdir="TB", # Sviluppo verticale per permettere ai coniugi di affiancarsi orizzontalmente
             size="11.69,8.27",
             ratio="compress",
-            nodesep="0.25",
+            nodesep="0.40",
             ranksep="0.50",
             splines="true"
         )
@@ -361,7 +361,7 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Forziamo Maurizio e Antonietta esattamente sullo stesso livello (rango orizzontale) vicini
+        # Forziamo i coniugi rigorosamente sullo stesso rango orizzontale affiancati
         coniugi_processati = set()
         for m in st.session_state.membri:
             figlio_id = m.get("id")
@@ -374,7 +374,6 @@ if st.session_state.membri:
                         s.attr(rank="same")
                         s.node(str(figlio_id))
                         s.node(str(coniuge_id))
-                    dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000")
 
         archi_agg = set()
         for m in st.session_state.membri:
@@ -391,7 +390,7 @@ if st.session_state.membri:
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_agg:
-                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
+                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="1000", constraint="false")
                     archi_agg.add(coppia_c)
 
         try:
