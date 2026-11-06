@@ -322,10 +322,10 @@ if st.session_state.membri:
         
         dot = graphviz.Digraph(comment="Albero Genealogico Stampabile", format="pdf")
         dot.attr(
-            rankdir="LR", 
+            rankdir="TB", 
             size="11.69,8.27",
             ratio="compress",
-            nodesep="0.25",
+            nodesep="0.30",
             ranksep="0.50",
             splines="true"
         )
@@ -361,20 +361,11 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Forziamo Maurizio e Antonietta esattamente sullo stesso livello (rango orizzontale) vicini
-        coniugi_processati = set()
-        for m in st.session_state.membri:
-            figlio_id = m.get("id")
-            coniuge_id = m.get("coniuge")
-            if coniuge_id and figlio_id:
-                coppia = tuple(sorted([str(figlio_id), str(coniuge_id)]))
-                if coppia not in coniugi_processati:
-                    coniugi_processati.add(coppia)
-                    with dot.subgraph() as s:
-                        s.attr(rank="same")
-                        s.node(str(figlio_id))
-                        s.node(str(coniuge_id))
-                    dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000")
+        # Forziamo Maurizio e Antonietta sullo stesso livello orizzontale affiancati
+        with dot.subgraph() as s:
+            s.attr(rank="same")
+            s.node("Maurizio Vignoto")
+            s.node("Antonietta Flocco")
 
         archi_agg = set()
         for m in st.session_state.membri:
@@ -384,14 +375,17 @@ if st.session_state.membri:
             
             if genitore_id and figlio_id:
                 coppia = (str(genitore_id), str(figlio_id))
-                if coppia not in archi_agg:
+                if coppia not in archi_aggiunti:
                     dot.edge(str(genitore_id), str(figlio_id), color="#555555", weight="1")
                     archi_agg.add(coppia)
                     
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_agg:
-                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
+                    if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
+                        dot.edge("Maurizio Vignoto", "Antonietta Flocco", dir="none", style="dashed", color="#d9534f", weight="1000", constraint="true")
+                    else:
+                        dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
                     archi_agg.add(coppia_c)
 
         try:
