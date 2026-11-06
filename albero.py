@@ -361,12 +361,9 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Subgraph mirato per forzare Maurizio e Antonietta sullo stesso livello (rank) vicini
-        with dot.subgraph() as s:
-            s.attr(rank="same")
-            s.node("Maurizio Vignoto")
-            s.node("Antonietta Flocco")
-            s.edge("Maurizio Vignoto", "Antonietta Flocco", style="invis", weight="1000", constraint="true")
+        # Colleghiamo Antonietta alla madre di Maurizio (Romana Carli) con un arco invisibile
+        # per posizionarla esattamente sullo stesso piano gerarchico senza creare scatole isolate
+        dot.edge("Romana Carli", "Antonietta Flocco", style="invis", weight="1000")
 
         archi_aggiunti = set()
         for m in st.session_state.membri:
