@@ -361,7 +361,7 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Forziamo Maurizio e Antonietta sullo stesso livello orizzontale affiancati
+        # Raggruppamento specifico per Maurizio e Antonietta per affiancarli perfettamente
         with dot.subgraph() as s:
             s.attr(rank="same")
             s.node("Maurizio Vignoto")
@@ -382,6 +382,7 @@ if st.session_state.membri:
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_agg:
+                    # Se è la coppia Maurizio-Antonietta, usiamo un vincolo forte e diretto
                     if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
                         dot.edge("Maurizio Vignoto", "Antonietta Flocco", dir="none", style="dashed", color="#d9534f", weight="1000", constraint="true")
                     else:
