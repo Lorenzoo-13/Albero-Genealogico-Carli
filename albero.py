@@ -311,7 +311,7 @@ if st.session_state.membri:
                     st.markdown(f"**Telefono:** {membro.get('telefono', 'Non inserito')}")
                     st.markdown(f"**Deceduto/a:** {membro.get('deceduto', 'NO')}")
                     st.markdown(f"**Genitore:** {membro.get('genitore', 'Nessuno / Capostipite')}")
-                    st.markdown(f"**Coniuge:** {coniuge_testo}")
+                    st.markdown(f"**Coniuge:** {membro.get('congiuge', coniuge_testo)}")
                     st.markdown(f"**Note:** {membro.get('note', 'Nessuna nota')}")
                     st.markdown("---")
 
@@ -322,7 +322,7 @@ if st.session_state.membri:
         
         dot = graphviz.Digraph(comment="Albero Genealogico Stampabile", format="pdf")
         dot.attr(
-            rankdir="LR",  # Torna al layout standard ramificato a sinistra-destra
+            rankdir="LR", 
             size="11.69,8.27",
             ratio="compress",
             nodesep="0.25",
@@ -361,6 +361,13 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
+        # Subgraph di ordinamento invisibile per mantenere Maurizio e Antonietta ordinati vicini senza rompere il layout
+        with dot.subgraph() as s:
+            s.attr(rank="same")
+            s.node("Maurizio Vignoto")
+            s.node("Antonietta Flocco")
+            s.edge("Maurizio Vignoto", "Antonietta Flocco", style="invis", weight="1000")
+
         archi_aggiunti = set()
         for m in st.session_state.membri:
             genitore_id = m.get("genitore")
@@ -376,9 +383,9 @@ if st.session_state.membri:
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_aggiunti:
-                    # Se è la coppia Maurizio-Antonietta, usiamo un peso elevato ma senza vincoli di rango globale per tenerli ravvicinati
+                    # Evitiamo di ridisegnare l'arco invisibile sopra e tracciamo il tratteggiato rosso
                     if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
-                        dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="50", constraint="false")
+                        dot.edge("Maurizio Vignoto", "Antonietta Flocco", dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
                     else:
                         dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
                     archi_aggiunti.add(coppia_c)
