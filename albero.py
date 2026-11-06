@@ -161,7 +161,6 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
                 }
                 st.session_state.membri.append(nuovo_membro)
                 
-                # Se è stato impostato un coniuge, aggiorna reciprocamente il nodo selezionato
                 if coniuge_valore:
                     ruolo_reciproco = "Marito" if ruolo_coniuge == "Moglie" else "Moglie"
                     for m in st.session_state.membri:
@@ -236,7 +235,6 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
                     membro_target["coniuge"] = nuovo_coniuge_valore
                     membro_target["ruolo_coniuge"] = mod_ruolo if nuovo_coniuge_valore else ""
                     
-                    # Aggiorna il legame reciproco
                     if nuovo_coniuge_valore:
                         ruolo_reciproco = "Marito" if mod_ruolo == "Moglie" else "Moglie"
                         for m in st.session_state.membri:
@@ -329,6 +327,20 @@ if st.session_state.membri:
             label += "<br/><font point-size='7' color='#d9534f'><b>[DECEDUTO/A]</b></font>"
 
         dot.node(str(m["id"]), label=f"<{label}>")
+
+    # Sottografi rank=same per mantenere i coniugi allineati sulla stessa riga
+    coniugi_processati = set()
+    for m in st.session_state.membri:
+        figlio_id = m.get("id")
+        coniuge_id = m.get("coniuge")
+        if coniuge_id and figlio_id:
+            coppia = tuple(sorted([str(figlio_id), str(coniuge_id)]))
+            if coppia not in coniugi_processati:
+                coniugi_processati.add(coppia)
+                with dot.subgraph() as s:
+                    s.attr(rank="same")
+                    s.node(str(figlio_id))
+                    s.node(str(coniuge_id))
 
     # Creazione dei collegamenti (Genitore -> Figlio e Coniugi)
     archi_aggiunti = set()
