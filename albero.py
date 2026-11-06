@@ -100,7 +100,7 @@ def salva_dati(membri):
         sheet = client.open_by_url(sheet_url).sheet1
         sheet.clear()
         
-        colonne = ["id", "nome", "cognome", "nascita", "comune", "cf", "telefono", "deceduto", "genitore", "note"]
+        colonne = ["id", "nome", "cognome", "nascita", "comune", "cf", "telefono", "deceduto", "genitore", "coniuge", "ruolo_coniuge", "note"]
         
         rows = [colonne]
         if membri:
@@ -132,12 +132,19 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
     opzioni_genitori = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id")]
     genitore_scelto = st.selectbox("Genitore", opzioni_genitori, key="add_genitore")
     
+    opzioni_coniugi = ["Nessuno"] + [m["id"] for m in st.session_state.membri if m.get("id")]
+    coniuge_scelto = st.selectbox("Coniuge (Moglie/Marito)", opzioni_coniugi, key="add_coniuge")
+    ruolo_coniuge = st.radio("Ruolo del nuovo membro:", ["Moglie", "Marito"], key="add_ruolo_coniuge", horizontal=True)
+    
     if st.button("Aggiungi alla Famiglia"):
         if nome and cognome:
             nuovo_id = f"{nome} {cognome}"
             if any(m.get("id") == nuovo_id for m in st.session_state.membri):
                 st.sidebar.error("Una persona con questo nome e cognome esiste già!")
             else:
+                coniuge_valore = "" if coniuge_scelto == "Nessuno" else coniuge_scelto
+                ruolo_valore = ruolo_coniuge if coniuge_valore else ""
+                
                 nuovo_membro = {
                     "id": nuovo_id,
                     "nome": nome,
@@ -148,9 +155,20 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
                     "telefono": telefono,
                     "deceduto": "SÌ" if deceduto else "NO",
                     "genitore": "" if genitore_scelto == "Nessuno (Capostipite)" else genitore_scelto,
+                    "coniuge": coniuge_valore,
+                    "ruolo_coniuge": ruolo_valore,
                     "note": ""
                 }
                 st.session_state.membri.append(nuovo_membro)
+                
+                # Se è stato impostato un coniuge, aggiorna reciprocamente il nodo selezionato
+                if coniuge_valore:
+                    ruolo_reciproco = "Marito" if ruolo_coniuge == "Moglie" else "Moglie"
+                    for m in st.session_state.membri:
+                        if m.get("id") == coniuge_valore:
+                            m["coniuge"] = nuovo_id
+                            m["ruolo_coniuge"] = ruolo_reciproco
+                            
                 salva_dati(st.session_state.membri)
                 st.sidebar.success(f"{nuovo_id} aggiunto/a con successo!")
                 st.rerun()
@@ -181,6 +199,15 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
             idx_genitore = altri_membri.index(genitore_attuale) if genitore_attuale in altri_membri else 0
             mod_genitore = st.selectbox("Genitore", altri_membri, index=idx_genitore, key="mod_genitore")
             
+            altri_coniugi = ["Nessuno"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
+            coniuge_attuale = membro_target.get("coniuge", "")
+            idx_coniuge = altri_coniugi.index(coniuge_attuale) if coniuge_attuale in altri_coniugi else 0
+            mod_coniuge = st.selectbox("Coniuge", altri_coniugi, index=idx_coniuge, key="mod_coniuge")
+            
+            ruolo_attuale = membro_target.get("ruolo_coniuge", "Moglie")
+            idx_ruolo = 0 if ruolo_attuale != "Marito" else 1
+            mod_ruolo = st.radio("Ruolo di questa persona rispetto al coniuge:", ["Moglie", "Marito"], index=idx_ruolo, key="mod_ruolo", horizontal=True)
+            
             if st.button("Salva Modifiche", type="primary"):
                 nuovo_id = f"{mod_nome} {mod_cognome}"
                 old_id = membro_target["id"]
@@ -192,6 +219,8 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
                         for m in st.session_state.membri:
                             if m.get("genitore") == old_id:
                                 m["genitore"] = nuovo_id
+                            if m.get("coniuge") == old_id:
+                                m["coniuge"] = nuovo_id
                     
                     membro_target["id"] = nuovo_id
                     membro_target["nome"] = mod_nome
@@ -202,6 +231,18 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
                     membro_target["telefono"] = mod_telefono
                     membro_target["deceduto"] = "SÌ" if mod_deceduto else "NO"
                     membro_target["genitore"] = "" if mod_genitore == "Nessuno (Capostipite)" else mod_genitore
+                    
+                    nuovo_coniuge_valore = "" if mod_coniuge == "Nessuno" else mod_coniuge
+                    membro_target["coniuge"] = nuovo_coniuge_valore
+                    membro_target["ruolo_coniuge"] = mod_ruolo if nuovo_coniuge_valore else ""
+                    
+                    # Aggiorna il legame reciproco
+                    if nuovo_coniuge_valore:
+                        ruolo_reciproco = "Marito" if mod_ruolo == "Moglie" else "Moglie"
+                        for m in st.session_state.membri:
+                            if m.get("id") == nuovo_coniuge_valore:
+                                m["coniuge"] = nuovo_id
+                                m["ruolo_coniuge"] = ruolo_reciproco
                     
                     salva_dati(st.session_state.membri)
                     st.sidebar.success("Modifiche salvate con successo!")
@@ -222,6 +263,9 @@ with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
             for m in st.session_state.membri:
                 if m.get("genitore") == persona_da_eliminare:
                     m["genitore"] = ""
+                if m.get("coniuge") == persona_da_eliminare:
+                    m["coniuge"] = ""
+                    m["ruolo_coniuge"] = ""
             salva_dati(st.session_state.membri)
             st.sidebar.success(f"{persona_da_eliminare} eliminato/a!")
             st.rerun()
@@ -234,18 +278,16 @@ st.title("🌳 Albero Genealogico Condiviso")
 if st.session_state.membri:
     col1, col2 = st.columns([1, 1])
     
-    # Configurazione Graphviz pulita: una sola freccia e dimensioni A4 verticale
     dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
     dot.attr(
         rankdir="LR", 
-        size="7.0,9.2!",       # Mantiene l'albero dentro i margini A4 verticali
+        size="7.0,9.2!",
         ratio="compress",
-        nodesep="0.08",        # Spaziatura verticale compatta per far entrare Lidia Toniolo in fondo
-        ranksep="0.30",        # Spaziatura tra generazioni
-        concentrate="true"     # FONDE le frecce duplicate in un'unica freccia!
+        nodesep="0.08",
+        ranksep="0.30",
+        concentrate="true"
     )
     
-    # Stile nodi: margini e dimensione regolati per non far uscire il testo
     dot.attr(
         "node", 
         shape="box", 
@@ -253,12 +295,11 @@ if st.session_state.membri:
         fillcolor="#f8f9fa", 
         fontname="Helvetica", 
         fontsize="8", 
-        margin="0.12,0.08",    # Ampio margine interno
-        width="1.8",           # Larghezza minima per garantire spazio al testo
-        fixedsize="false"      # Permette al rettangolo di allargarsi se il nome è lungo
+        margin="0.12,0.08", 
+        width="1.8", 
+        fixedsize="false"
     )
     
-    # Stile frecce
     dot.attr(
         "edge",
         dir="forward",
@@ -266,13 +307,14 @@ if st.session_state.membri:
         penwidth="1.0"
     )
 
-    # Creazione dei nodi (SOSTITUISCE QUELLO NELLO SCREENSHOT)
+    # Creazione dei nodi
     for m in st.session_state.membri:
         if not m.get("id"):
             continue
         
-        # Etichetta formattata con font controllati
         label = f"<font point-size='8.5'><b>{m['nome']} {m['cognome']}</b></font>"
+        if m.get("ruolo_coniuge"):
+            label += f"<br/><font point-size='7' color='#0275d8'><b>({m['ruolo_coniuge']})</b></font>"
         if m.get("nascita"):
             label += f"<br/><font point-size='7' color='#444444'>Nato/a: {m['nascita']}</font>"
         if m.get("comune"):
@@ -288,17 +330,26 @@ if st.session_state.membri:
 
         dot.node(str(m["id"]), label=f"<{label}>")
 
-  # Creazione dei collegamenti senza duplicati (1 sola freccia)
+    # Creazione dei collegamenti (Genitore -> Figlio e Coniugi)
     archi_aggiunti = set()
     for m in st.session_state.membri:
         genitore_id = m.get("genitore")
         figlio_id = m.get("id")
+        coniuge_id = m.get("coniuge")
         
+        # Arco Genitore-Figlio
         if genitore_id and figlio_id:
             coppia = (str(genitore_id), str(figlio_id))
             if coppia not in archi_aggiunti:
                 dot.edge(str(genitore_id), str(figlio_id))
                 archi_aggiunti.add(coppia)
+                
+        # Arco Coniugale (Tratteggiato rosso, senza freccia)
+        if coniuge_id and figlio_id:
+            coppia_coniugi = tuple(sorted([str(figlio_id), str(coniuge_id)]))
+            if coppia_coniugi not in archi_aggiunti:
+                dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", constraint="false")
+                archi_aggiunti.add(coppia_coniugi)
 
     try:
         png_bytes = dot.pipe(format="png")
