@@ -361,9 +361,8 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Colleghiamo Antonietta alla madre di Maurizio (Romana Carli) con un arco invisibile
-        # per posizionarla esattamente sullo stesso piano gerarchico senza creare scatole isolate
-        dot.edge("Romana Carli", "Antonietta Flocco", style="invis", weight="1000")
+        # Forziamo Antonietta ad agganciarsi direttamente alla struttura di Maurizio con un arco invisibile gerarchico
+        dot.edge("Maurizio Vignoto", "Antonietta Flocco", style="invis", weight="1000", constraint="true")
 
         archi_aggiunti = set()
         for m in st.session_state.membri:
