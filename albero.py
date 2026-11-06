@@ -376,7 +376,11 @@ if st.session_state.membri:
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
                 if coppia_c not in archi_aggiunti:
-                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
+                    # Forziamo constraint=true e alto peso solo per Maurizio e Antonietta per tenerli vicini e collegati dritti
+                    if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
+                        dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="1000", constraint="true")
+                    else:
+                        dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
                     archi_aggiunti.add(coppia_c)
 
         try:
