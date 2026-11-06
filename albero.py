@@ -1,13 +1,13 @@
 import streamlit as st
-import graphviz
 import streamlit.components.v1 as components
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+from pyvis.network import Network
 
 st.set_page_config(page_title="Albero Genealogico Carli", layout="wide")
 
-# CSS di Stampa ottimizzato per A4 verticale in pagina unica senza tagli
+# CSS di Stampa ottimizzato
 st.markdown("""
     <style>
     @media print {
@@ -35,28 +35,11 @@ st.markdown("""
         [data-testid="stHeader"] {
             display: none !important;
         }
-        
-        [data-testid="stGraphvizChart"] {
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            margin: 0 auto !important;
-        }
-        
-        [data-testid="stGraphvizChart"] svg {
-            max-width: 100% !important;
-            max-height: 94vh !important;
-            width: auto !important;
-            height: auto !important;
-            transform: scale(0.78);
-            transform-origin: top center;
-        }
     }
     </style>
 """, unsafe_allow_html=True)
 
+# Connessione sicura a Google Sheets tramite Secrets
 @st.cache_resource
 def get_gspread_client():
     scope = [
@@ -109,12 +92,14 @@ def salva_dati(membri):
     except Exception as e:
         st.error(f"Errore nel salvataggio su Google Sheets: {e}")
 
+# Inizializzazione sessione
 if "membri" not in st.session_state:
     st.session_state.membri = carica_dati()
 
 # --- SIDEBAR: GESTIONE ---
 st.sidebar.title("📌 Gestione Albero")
 
+# 1. Aggiungi Persona
 with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
     nome = st.text_input("Nome", key="add_nome")
     cognome = st.text_input("Cognome", key="add_cognome")
@@ -169,6 +154,7 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
         else:
             st.sidebar.error("Nome e Cognome sono obbligatori!")
 
+# 2. Modifica Persona
 with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
     if st.session_state.membri:
         lista_ids = [m["id"] for m in st.session_state.membri if m.get("id")]
@@ -242,6 +228,7 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
     else:
         st.write("Nessun membro presente da modificare.")
 
+# 3. Rimuovi Persona
 with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
     if st.session_state.membri:
         persona_da_eliminare = st.selectbox(
@@ -263,122 +250,94 @@ with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
     else:
         st.write("Nessun membro presente.")
 
-# --- VISUALIZZAZIONE GRAFICA E STAMPA ---
-st.title("🌳 Albero Genealogico Condiviso")
+# --- VISUALIZZAZIONE GRAFICA INTERATTIVA CON PYVIS ---
+st.title("🌳 Albero Genealogico Interattivo (PyVis)")
 
 if st.session_state.membri:
-    col1, col2 = st.columns([1, 1])
+    net = Network(height="750px", width="100%", directed=True, notebook=False, cdn_resources='remote')
     
-    dot = graphviz.Digraph(comment="Albero Genealogico", format="png")
-    dot.attr(
-        rankdir="LR", 
-        size="7.0,9.2!",
-        ratio="compress",
-        nodesep="0.08",
-        ranksep="0.30",
-        concentrate="true",
-        splines="true",        # Linee curate ed evitano tagli netti
-        overlap="false"        # Previene la sovrapposizione dei nodi
-    )
-    
-    dot.attr(
-        "node", 
-        shape="box", 
-        style="rounded,filled", 
-        fillcolor="#f8f9fa", 
-        fontname="Helvetica", 
-        fontsize="8", 
-        margin="0.12,0.08", 
-        width="1.8", 
-        fixedsize="false"
-    )
-    
-    dot.attr(
-        "edge",
-        dir="forward",
-        arrowsize="0.7",
-        penwidth="1.0"
-    )
+    net.set_options("""
+    {
+      "physics": {
+        "barnesHut": {
+          "gravitationalConstant": -3000,
+          "centralGravity": 0.3,
+          "springLength": 90,
+          "springConstant": 0.04,
+          "damping": 0.09
+        },
+        "minVelocity": 0.75
+      },
+      "interaction": {
+        "dragNodes": true,
+        "zoomView": true
+      }
+    }
+    """)
 
-    # Creazione dei nodi
+    # 1. Aggiunta Nodi
     for m in st.session_state.membri:
         if not m.get("id"):
             continue
         
-        label = f"<font point-size='8.5'><b>{m['nome']} {m['cognome']}</b></font>"
+        label = f"{m['nome']} {m['cognome']}"
         if m.get("ruolo_coniuge"):
-            label += f"<br/><font point-size='7' color='#0275d8'><b>({m['ruolo_coniuge']})</b></font>"
-        if m.get("nascita"):
-            label += f"<br/><font point-size='7' color='#444444'>Nato/a: {m['nascita']}</font>"
-        if m.get("comune"):
-            label += f"<br/><font point-size='7' color='#444444'>Comune: {m['comune']}</font>"
-        if m.get("cf"):
-            label += f"<br/><font point-size='6.5' color='#444444'>CF: {m['cf']}</font>"
-        if m.get("telefono"):
-            label += f"<br/><font point-size='7' color='#444444'>Tel: {m['telefono']}</font>"
-        if m.get("note"):
-            label += f"<br/><font point-size='6.5' color='#444444'>Note: {m['note']}</font>"
+            label += f" ({m['ruolo_coniuge']})"
+        
+        title_info = f"<b>{m['nome']} {m['cognome']}</b>"
+        if m.get("nascita"): title_info += f"<br>Nato/a: {m['nascita']}"
+        if m.get("comune"): title_info += f"<br>Comune: {m['comune']}"
+        if m.get("cf"): title_info += f"<br>CF: {m['cf']}"
+        if m.get("telefono"): title_info += f"<br>Tel: {m['telefono']}"
         if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
-            label += "<br/><font point-size='7' color='#d9534f'><b>[DECEDUTO/A]</b></font>"
+            title_info += "<br><span style='color:red;'><b>DECEDUTO/A</b></span>"
 
-        dot.node(str(m["id"]), label=f"<{label}>")
+        colore_nodo = "#FFC0CB" if m.get("ruolo_coniuge") == "Moglie" else "#87CEFA"
+        if not m.get("ruolo_coniuge") and m.get("genitore") == "":
+            colore_nodo = "#ffcc00"
 
-    # Sottografi rank=same per mantenere i coniugi allineati
-    coniugi_processati = set()
-    for m in st.session_state.membri:
-        figlio_id = m.get("id")
-        coniuge_id = m.get("coniuge")
-        if coniuge_id and figlio_id:
-            coppia = tuple(sorted([str(figlio_id), str(coniuge_id)]))
-            if coppia not in coniugi_processati:
-                coniugi_processati.add(coppia)
-                with dot.subgraph() as s:
-                    s.attr(rank="same")
-                    s.node(str(figlio_id))
-                    s.node(str(coniuge_id))
+        net.add_node(
+            str(m["id"]), 
+            label=label, 
+            title=title_info, 
+            color=colore_nodo,
+            shape="box",
+            font={"size": 14}
+        )
 
-    # Creazione dei collegamenti con pesi dedicati
+    # 2. Aggiunta Collegamenti
     archi_aggiunti = set()
     for m in st.session_state.membri:
         genitore_id = m.get("genitore")
         figlio_id = m.get("id")
         coniuge_id = m.get("coniuge")
         
-        # Arco Genitore-Figlio (peso standard)
         if genitore_id and figlio_id:
             coppia = (str(genitore_id), str(figlio_id))
             if coppia not in archi_aggiunti:
-                dot.edge(str(genitore_id), str(figlio_id), weight="1")
+                net.add_edge(str(genitore_id), str(figlio_id), color="#888888", width=2)
                 archi_aggiunti.add(coppia)
                 
-        # Arco Coniugale con weight altissimo per forzare la vicinanza ed evitare linee trasversali
         if coniuge_id and figlio_id:
             coppia_coniugi = tuple(sorted([str(figlio_id), str(coniuge_id)]))
             if coppia_coniugi not in archi_aggiunti:
-                dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", constraint="false", weight="100")
+                net.add_edge(
+                    str(figlio_id), 
+                    str(coniuge_id), 
+                    color="#d9534f", 
+                    width=3, 
+                    dashes=True, 
+                    arrows=""
+                )
                 archi_aggiunti.add(coppia_coniugi)
 
-    try:
-        png_bytes = dot.pipe(format="png")
-    except Exception as e:
-        png_bytes = None
+    html_path = "albero_interattivo.html"
+    net.save_graph(html_path)
 
-    with col1:
-        if png_bytes:
-            st.download_button(
-                label="🖼️ Scarica Immagine (PNG)",
-                data=png_bytes,
-                file_name="albero_genealogico_carli.png",
-                mime="image/png",
-                use_container_width=True
-            )
-        else:
-            st.button("🖼️ Scarica Immagine (PNG)", disabled=True, use_container_width=True)
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_data = f.read()
     
-    with col2:
-        if st.button("🖨️ Stampa Pagina / Salva in PDF", use_container_width=True):
-            components.html("<script>window.parent.print();</script>", height=0, width=0)
+    components.html(html_data, height=800, scrolling=True)
 
-    st.graphviz_chart(dot, use_container_width=True)
 else:
     st.info("L'albero è vuoto. Aggiungi il primo membro dalla barra laterale.")
