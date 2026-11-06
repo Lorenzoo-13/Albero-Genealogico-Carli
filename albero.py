@@ -36,7 +36,6 @@ st.markdown("""
             display: none !important;
         }
         
-        /* Contenitore grafico centrato e scalato per rientrare interamente nel foglio */
         [data-testid="stGraphvizChart"] {
             width: 100% !important;
             height: 100% !important;
@@ -46,7 +45,6 @@ st.markdown("""
             margin: 0 auto !important;
         }
         
-        /* Ridimensiona l'SVG per farlo stare comodamente in un solo foglio verticale */
         [data-testid="stGraphvizChart"] svg {
             max-width: 100% !important;
             max-height: 94vh !important;
@@ -59,7 +57,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Connessione sicura a Google Sheets tramite Secrets
 @st.cache_resource
 def get_gspread_client():
     scope = [
@@ -112,14 +109,12 @@ def salva_dati(membri):
     except Exception as e:
         st.error(f"Errore nel salvataggio su Google Sheets: {e}")
 
-# Inizializzazione sessione
 if "membri" not in st.session_state:
     st.session_state.membri = carica_dati()
 
 # --- SIDEBAR: GESTIONE ---
 st.sidebar.title("📌 Gestione Albero")
 
-# 1. Aggiungi Persona
 with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
     nome = st.text_input("Nome", key="add_nome")
     cognome = st.text_input("Cognome", key="add_cognome")
@@ -174,7 +169,6 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
         else:
             st.sidebar.error("Nome e Cognome sono obbligatori!")
 
-# 2. Modifica Persona
 with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
     if st.session_state.membri:
         lista_ids = [m["id"] for m in st.session_state.membri if m.get("id")]
@@ -248,7 +242,6 @@ with st.sidebar.expander("✏️ Modifica Persona", expanded=True):
     else:
         st.write("Nessun membro presente da modificare.")
 
-# 3. Rimuovi Persona
 with st.sidebar.expander("🗑️ Rimuovi Persona", expanded=False):
     if st.session_state.membri:
         persona_da_eliminare = st.selectbox(
@@ -283,7 +276,9 @@ if st.session_state.membri:
         ratio="compress",
         nodesep="0.08",
         ranksep="0.30",
-        concentrate="true"
+        concentrate="true",
+        splines="true",        # Linee curate ed evitano tagli netti
+        overlap="false"        # Previene la sovrapposizione dei nodi
     )
     
     dot.attr(
@@ -328,7 +323,7 @@ if st.session_state.membri:
 
         dot.node(str(m["id"]), label=f"<{label}>")
 
-    # Sottografi rank=same per mantenere i coniugi allineati sulla stessa riga
+    # Sottografi rank=same per mantenere i coniugi allineati
     coniugi_processati = set()
     for m in st.session_state.membri:
         figlio_id = m.get("id")
@@ -342,25 +337,25 @@ if st.session_state.membri:
                     s.node(str(figlio_id))
                     s.node(str(coniuge_id))
 
-    # Creazione dei collegamenti (Genitore -> Figlio e Coniugi)
+    # Creazione dei collegamenti con pesi dedicati
     archi_aggiunti = set()
     for m in st.session_state.membri:
         genitore_id = m.get("genitore")
         figlio_id = m.get("id")
         coniuge_id = m.get("coniuge")
         
-        # Arco Genitore-Figlio
+        # Arco Genitore-Figlio (peso standard)
         if genitore_id and figlio_id:
             coppia = (str(genitore_id), str(figlio_id))
             if coppia not in archi_aggiunti:
-                dot.edge(str(genitore_id), str(figlio_id))
+                dot.edge(str(genitore_id), str(figlio_id), weight="1")
                 archi_aggiunti.add(coppia)
                 
-        # Arco Coniugale (Tratteggiato rosso, senza freccia)
+        # Arco Coniugale con weight altissimo per forzare la vicinanza ed evitare linee trasversali
         if coniuge_id and figlio_id:
             coppia_coniugi = tuple(sorted([str(figlio_id), str(coniuge_id)]))
             if coppia_coniugi not in archi_aggiunti:
-                dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", constraint="false")
+                dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", constraint="false", weight="100")
                 archi_aggiunti.add(coppia_coniugi)
 
     try:
