@@ -126,7 +126,6 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
 st.title("🌳 Albero Genealogico Interattivo")
 
 if st.session_state.membri:
-    # Dividiamo lo schermo: a sinistra il grafico PyVis, a destra la scheda dei dettagli ordinati
     col_grafico, col_scheda = st.columns([3, 1])
 
     with col_grafico:
@@ -200,16 +199,12 @@ if st.session_state.membri:
                     )
                     archi_aggiunti.add(coppia_coniugi)
 
-        # Aggiungiamo un listener JavaScript per comunicare il nodo selezionato a Streamlit tramite query parameters o session state
-        # In alternativa, inseriamo un comodo selettore a tendina sincronizzato o un meccanismo di click popup pulito.
         html_path = "albero_interattivo.html"
         net.save_graph(html_path)
 
         with open(html_path, 'r', encoding='utf-8') as f:
             html_code = f.read()
 
-        # Script JS per intercettare il click sui nodi in PyVis ed evidenziarli
-        # Per ora usiamo un selettore laterale pulito e ordinato che garantisce lettura perfetta di tutti i campi in ordine.
         components.html(html_code, height=780, scrolling=True)
 
     with col_scheda:
@@ -217,11 +212,16 @@ if st.session_state.membri:
         lista_nomi = [m["id"] for m in st.session_state.membri if m.get("id")]
         
         if lista_nomi:
-            persona_selezionata = st.selectbox("Seleziona o clicca una persona:", lista_nomi, key="seleziona_dettaglio")
+            persona_selezionata = st.selectbox("Seleziona una persona:", lista_nomi, key="seleziona_dettaglio")
             
             membro = next((m for m in st.session_state.membri if m.get("id") == persona_selezionata), None)
             
             if membro:
+                coniuge_testo = membro.get('coniuge', 'Nessuno')
+                ruolo_c = membro.get('ruolo_coniuge', '')
+                if coniuge_testo and coniuge_testo != 'Nessuno' and ruolo_c:
+                    coniuge_testo += f" ({ruolo_c})"
+
                 st.markdown("---")
                 st.markdown(f"**👤 Nome e Cognome:** {membro.get('nome', '')} {membro.get('cognome', '')}")
                 st.markdown(f"**🎂 Data di Nascita:** {membro.get('nascita', 'Non inserita')}")
@@ -230,7 +230,7 @@ if st.session_state.membri:
                 st.markdown(f"**📞 Telefono:** {membro.get('telefono', 'Non inserito')}")
                 st.markdown(f"**🕊️ Deceduto/a:** {membro.get('deceduto', 'NO')}")
                 st.markdown(f"**👪 Genitore:** {membro.get('genitore', 'Nessuno / Capostipite')}")
-                st.markdown(f"**💍 Coniuge:** {membro.get('coniuge', 'Nessuno')} {f\"({membro.get('ruolo_coniuge', '')})\" if membro.get('ruolo_coniuge') else ''}")
+                st.markdown(f"**💍 Coniuge:** {coniuge_testo}")
                 st.markdown(f"**📝 Note:** {membro.get('note', 'Nessuna nota')}")
                 st.markdown("---")
         else:
