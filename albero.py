@@ -322,10 +322,10 @@ if st.session_state.membri:
         
         dot = graphviz.Digraph(comment="Albero Genealogico Stampabile", format="pdf")
         dot.attr(
-            rankdir="TB", 
+            rankdir="LR",  # Torna al layout standard ramificato a sinistra-destra
             size="11.69,8.27",
             ratio="compress",
-            nodesep="0.30",
+            nodesep="0.25",
             ranksep="0.50",
             splines="true"
         )
@@ -361,13 +361,7 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Raggruppamento specifico per Maurizio e Antonietta per affiancarli perfettamente
-        with dot.subgraph() as s:
-            s.attr(rank="same")
-            s.node("Maurizio Vignoto")
-            s.node("Antonietta Flocco")
-
-        archi_agg = set()
+        archi_aggiunti = set()
         for m in st.session_state.membri:
             genitore_id = m.get("genitore")
             figlio_id = m.get("id")
@@ -377,17 +371,17 @@ if st.session_state.membri:
                 coppia = (str(genitore_id), str(figlio_id))
                 if coppia not in archi_aggiunti:
                     dot.edge(str(genitore_id), str(figlio_id), color="#555555", weight="1")
-                    archi_agg.add(coppia)
+                    archi_aggiunti.add(coppia)
                     
             if coniuge_id and figlio_id:
                 coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
-                if coppia_c not in archi_agg:
-                    # Se è la coppia Maurizio-Antonietta, usiamo un vincolo forte e diretto
+                if coppia_c not in archi_aggiunti:
+                    # Se è la coppia Maurizio-Antonietta, usiamo un peso elevato ma senza vincoli di rango globale per tenerli ravvicinati
                     if {"Maurizio Vignoto", "Antonietta Flocco"} == {str(figlio_id), str(coniuge_id)}:
-                        dot.edge("Maurizio Vignoto", "Antonietta Flocco", dir="none", style="dashed", color="#d9534f", weight="1000", constraint="true")
+                        dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="50", constraint="false")
                     else:
                         dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
-                    archi_agg.add(coppia_c)
+                    archi_aggiunti.add(coppia_c)
 
         try:
             pdf_bytes = dot.pipe(format="pdf")
