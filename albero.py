@@ -361,7 +361,7 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Raggruppamento rigoroso sullo stesso rango orizzontale e sequenza diretta per i coniugi
+        # Raggruppamento rigoroso sullo stesso rango orizzontale e sequenza diretta per i coniugi alla stessa altezza dei figli
         coniugi_processati = set()
         for m in st.session_state.membri:
             figlio_id = m.get("id")
@@ -374,7 +374,7 @@ if st.session_state.membri:
                         s.attr(rank="same")
                         s.node(str(figlio_id))
                         s.node(str(coniuge_id))
-                    dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000")
+                    dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000", constraint="true")
 
         archi_agg = set()
         for m in st.session_state.membri:
