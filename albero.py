@@ -361,7 +361,7 @@ if st.session_state.membri:
 
             dot.node(str(m["id"]), label=f"<{label}>")
 
-        # Raggruppamento rigoroso sullo stesso rango orizzontale (rank=same) per Maurizio e Antonietta
+        # Forziamo Maurizio e Antonietta esattamente sullo stesso livello (rango orizzontale) vicini
         coniugi_processati = set()
         for m in st.session_state.membri:
             figlio_id = m.get("id")
@@ -374,7 +374,6 @@ if st.session_state.membri:
                         s.attr(rank="same")
                         s.node(str(figlio_id))
                         s.node(str(coniuge_id))
-                    # Linea invisibile orizzontale per tenerli affiancati puliti
                     dot.edge(str(figlio_id), str(coniuge_id), style="invis", weight="1000")
 
         archi_agg = set()
