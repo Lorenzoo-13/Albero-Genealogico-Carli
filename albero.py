@@ -67,9 +67,9 @@ if "membri" not in st.session_state:
     st.session_state.membri = carica_dati()
 
 # --- SIDEBAR: GESTIONE ---
-st.sidebar.title("📌 Gestione Albero")
+st.sidebar.title("Gestione Albero")
 
-with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
+with st.sidebar.expander("Aggiungi Persona", expanded=False):
     nome = st.text_input("Nome", key="add_nome")
     cognome = st.text_input("Cognome", key="add_cognome")
     data_nascita = st.text_input("Data di Nascita (gg/mm/aaaa)", key="add_nascita")
@@ -123,13 +123,107 @@ with st.sidebar.expander("➕ Aggiungi Persona", expanded=False):
         else:
             st.sidebar.error("Nome e Cognome sono obbligatori!")
 
+with st.sidebar.expander("Modifica Persona", expanded=True):
+    if st.session_state.membri:
+        lista_ids = [m["id"] for m in st.session_state.membri if m.get("id")]
+        persona_da_modificare_id = st.selectbox("Seleziona Persona da Modificare", lista_ids, key="mod_select")
+        
+        membro_target = next((m for m in st.session_state.membri if m.get("id") == persona_da_modificare_id), None)
+        
+        if membro_target:
+            mod_nome = st.text_input("Nome", value=str(membro_target.get("nome", "")), key="mod_nome")
+            mod_cognome = st.text_input("Cognome", value=str(membro_target.get("cognome", "")), key="mod_cognome")
+            mod_nascita = st.text_input("Data di Nascita", value=str(membro_target.get("nascita", "")), key="mod_nascita")
+            mod_comune = st.text_input("Comune di Nascita", value=str(membro_target.get("comune", "")), key="mod_comune")
+            mod_cf = st.text_input("Codice Fiscale", value=str(membro_target.get("cf", "")), key="mod_cf")
+            mod_telefono = st.text_input("Numero di Telefono", value=str(membro_target.get("telefono", "")), key="mod_telefono")
+            
+            is_deceduto = True if membro_target.get("deceduto") in ["SÌ", True, "True", "Sì", "si"] else False
+            mod_deceduto = st.checkbox("Deceduto/a", value=is_deceduto, key="mod_deceduto")
+            
+            altri_membri = ["Nessuno (Capostipite)"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
+            genitore_attuale = membro_target.get("genitore", "")
+            idx_genitore = altri_membri.index(genitore_attuale) if genitore_attuale in altri_membri else 0
+            mod_genitore = st.selectbox("Genitore", altri_membri, index=idx_genitore, key="mod_genitore")
+            
+            altri_coniugi = ["Nessuno"] + [m["id"] for m in st.session_state.membri if m.get("id") and m.get("id") != persona_da_modificare_id]
+            coniuge_attuale = membro_target.get("coniuge", "")
+            idx_coniuge = altri_coniugi.index(coniuge_attuale) if coniuge_attuale in altri_coniugi else 0
+            mod_coniuge = st.selectbox("Coniuge", altri_coniugi, index=idx_coniuge, key="mod_coniuge")
+            
+            ruolo_attuale = membro_target.get("ruolo_coniuge", "Moglie")
+            idx_ruolo = 0 if ruolo_attuale != "Marito" else 1
+            mod_ruolo = st.radio("Ruolo di questa persona rispetto al coniuge:", ["Moglie", "Marito"], index=idx_ruolo, key="mod_ruolo", horizontal=True)
+            
+            if st.button("Salva Modifiche", type="primary"):
+                nuovo_id = f"{mod_nome} {mod_cognome}"
+                old_id = membro_target["id"]
+                
+                if nuovo_id != old_id and any(m.get("id") == nuovo_id for m in st.session_state.membri):
+                    st.sidebar.error("Esiste già un'altra persona con questo Nome e Cognome!")
+                else:
+                    if nuovo_id != old_id:
+                        for m in st.session_state.membri:
+                            if m.get("genitore") == old_id:
+                                m["genitore"] = nuovo_id
+                            if m.get("coniuge") == old_id:
+                                m["coniuge"] = nuovo_id
+                    
+                    membro_target["id"] = nuovo_id
+                    membro_target["nome"] = mod_nome
+                    membro_target["cognome"] = mod_cognome
+                    membro_target["nascita"] = mod_nascita
+                    membro_target["comune"] = mod_comune
+                    membro_target["cf"] = mod_cf
+                    membro_target["telefono"] = mod_telefono
+                    membro_target["deceduto"] = "SÌ" if mod_deceduto else "NO"
+                    membro_target["genitore"] = "" if mod_genitore == "Nessuno (Capostipite)" else mod_genitore
+                    
+                    nuovo_coniuge_valore = "" if mod_coniuge == "Nessuno" else mod_coniuge
+                    membro_target["coniuge"] = nuovo_coniuge_valore
+                    membro_target["ruolo_coniuge"] = mod_ruolo if nuovo_coniuge_valore else ""
+                    
+                    if nuovo_coniuge_valore:
+                        ruolo_reciproco = "Marito" if mod_ruolo == "Moglie" else "Moglie"
+                        for m in st.session_state.membri:
+                            if m.get("id") == nuovo_coniuge_valore:
+                                m["coniuge"] = nuovo_id
+                                m["ruolo_coniuge"] = ruolo_reciproco
+                    
+                    salva_dati(st.session_state.membri)
+                    st.sidebar.success("Modifiche salvate con successo!")
+                    st.rerun()
+    else:
+        st.sidebar.write("Nessun membro presente da modificare.")
+
+with st.sidebar.expander("Rimuovi Persona", expanded=False):
+    if st.session_state.membri:
+        persona_da_eliminare = st.selectbox(
+            "Seleziona la persona da rimuovere",
+            [m["id"] for m in st.session_state.membri if m.get("id")],
+            key="del_select"
+        )
+        if st.button("Elimina Persona"):
+            st.session_state.membri = [m for m in st.session_state.membri if m.get("id") != persona_da_eliminare]
+            for m in st.session_state.membri:
+                if m.get("genitore") == persona_da_eliminare:
+                    m["genitore"] = ""
+                if m.get("coniuge") == persona_da_eliminare:
+                    m["coniuge"] = ""
+                    m["ruolo_coniuge"] = ""
+            salva_dati(st.session_state.membri)
+            st.sidebar.success(f"{persona_da_eliminare} eliminato/a!")
+            st.rerun()
+    else:
+        st.sidebar.write("Nessun membro presente.")
+
 # --- VISUALIZZAZIONE E ESPORTAZIONE ---
-st.title("🌳 Albero Genealogico Carli")
+st.title("Albero Genealogico Carli")
 
 if st.session_state.membri:
-    tab_interattiva, tab_pdf = st.tabs(["🌐 Vista Interattiva (Schermo)", "📄 Vista per Stampa / Esportazione PDF"])
+    tab_interattiva, tab_pdf = st.tabs(["Vista Interattiva (Schermo)", "Vista per Stampa e Esportazione PDF"])
     
-    # TAB 1: PYVIS INTERATTIVO
+    # TAB 1: PYVIS INTERATTIVO (Con nodi ingranditi e leggibili)
     with tab_interattiva:
         col_grafico, col_scheda = st.columns([3, 1])
 
@@ -140,9 +234,9 @@ if st.session_state.membri:
             {
               "physics": {
                 "barnesHut": {
-                  "gravitationalConstant": -3000,
+                  "gravitationalConstant": -3500,
                   "centralGravity": 0.3,
-                  "springLength": 90,
+                  "springLength": 110,
                   "springConstant": 0.04,
                   "damping": 0.09
                 },
@@ -175,7 +269,8 @@ if st.session_state.membri:
                     label=label, 
                     color=colore_nodo,
                     shape="box",
-                    font={"size": 14}
+                    font={"size": 16, "face": "Helvetica"},
+                    margin=15
                 )
 
             archi_aggiunti = set()
@@ -212,7 +307,7 @@ if st.session_state.membri:
             components.html(html_code, height=750, scrolling=True)
 
         with col_scheda:
-            st.subheader("📋 Dettagli Persona")
+            st.subheader("Dettagli Persona")
             lista_nomi = [m["id"] for m in st.session_state.membri if m.get("id")]
             
             if lista_nomi:
@@ -226,29 +321,29 @@ if st.session_state.membri:
                         coniuge_testo += f" ({ruolo_c})"
 
                     st.markdown("---")
-                    st.markdown(f"**👤 Nome e Cognome:** {membro.get('nome', '')} {membro.get('cognome', '')}")
-                    st.markdown(f"**🎂 Data di Nascita:** {membro.get('nascita', 'Non inserita')}")
-                    st.markdown(f"**📍 Comune di Nascita:** {membro.get('comune', 'Non inserito')}")
-                    st.markdown(f"**🆔 Codice Fiscale:** {membro.get('cf', 'Non inserito')}")
-                    st.markdown(f"**📞 Telefono:** {membro.get('telefono', 'Non inserito')}")
-                    st.markdown(f"**🕊️ Deceduto/a:** {membro.get('deceduto', 'NO')}")
-                    st.markdown(f"**👪 Genitore:** {membro.get('genitore', 'Nessuno / Capostipite')}")
-                    st.markdown(f"**💍 Coniuge:** {coniuge_testo}")
-                    st.markdown(f"**📝 Note:** {membro.get('note', 'Nessuna nota')}")
+                    st.markdown(f"**Nome e Cognome:** {membro.get('nome', '')} {membro.get('cognome', '')}")
+                    st.markdown(f"**Data di Nascita:** {membro.get('nascita', 'Non inserita')}")
+                    st.markdown(f"**Comune di Nascita:** {membro.get('comune', 'Non inserito')}")
+                    st.markdown(f"**Codice Fiscale:** {membro.get('cf', 'Non inserito')}")
+                    st.markdown(f"**Telefono:** {membro.get('telefono', 'Non inserito')}")
+                    st.markdown(f"**Deceduto/a:** {membro.get('deceduto', 'NO')}")
+                    st.markdown(f"**Genitore:** {membro.get('genitore', 'Nessuno / Capostipite')}")
+                    st.markdown(f"**Coniuge:** {coniuge_testo}")
+                    st.markdown(f"**Note:** {membro.get('note', 'Nessuna nota')}")
                     st.markdown("---")
 
-    # TAB 2: STAMPA E CONVERSIONE IN PDF PER WHATSAPP
+    # TAB 2: STAMPA E CONVERSIONE IN PDF (Con rettangoli ampi e ben leggibili)
     with tab_pdf:
-        st.subheader("🖨️ Generazione PDF / Immagine Vettoriale per Stampa e WhatsApp")
-        st.write("Questa vista genera l'albero tradizionale completo di **tutti i dati a vista all'interno di ogni nodo**, pronto per essere scaricato come immagine/PDF e inviato direttamente tramite WhatsApp.")
+        st.subheader("Generazione PDF e Immagine per Stampa e WhatsApp")
+        st.write("Questa vista mostra l'albero con tutti i dati a vista all'interno di ogni nodo ingrandito, ideale per essere scaricato e condiviso.")
         
         dot = graphviz.Digraph(comment="Albero Genealogico Stampabile", format="pdf")
         dot.attr(
             rankdir="LR", 
-            size="11.69,8.27", # Formato A4 Orizzontale
+            size="11.69,8.27",
             ratio="compress",
-            nodesep="0.15",
-            ranksep="0.40",
+            nodesep="0.25",
+            ranksep="0.50",
             splines="true"
         )
         
@@ -258,78 +353,24 @@ if st.session_state.membri:
             style="rounded,filled", 
             fillcolor="#f8f9fa", 
             fontname="Helvetica", 
-            fontsize="9", 
-            margin="0.15,0.10"
+            fontsize="10", 
+            margin="0.25,0.18",
+            width="2.2"
         )
 
         for m in st.session_state.membri:
             if not m.get("id"):
                 continue
             
-            # Etichetta HTML dettagliata con tutti i dati in chiaro
-            label = f"<font point-size='10'><b>{m.get('nome', '')} {m.get('cognome', '')}</b></font>"
+            # Etichetta HTML dettagliata, ingrandita e chiara
+            label = f"<font point-size='12'><b>{m.get('nome', '')} {m.get('cognome', '')}</b></font>"
             if m.get("ruolo_coniuge"):
-                label += f"<br/><font point-size='7.5' color='#0275d8'><b>({m['ruolo_coniuge']})</b></font>"
+                label += f"<br/><font point-size='9' color='#0275d8'><b>({m['ruolo_coniuge']})</b></font>"
             if m.get("nascita"):
-                label += f"<br/><font point-size='7.5' color='#333333'>🎂 {m['nascita']}</font>"
+                label += f"<br/><font point-size='9' color='#333333'>Nascita: {m['nascita']}</font>"
             if m.get("comune"):
-                label += f"<br/><font point-size='7.5' color='#333333'>📍 {m['comune']}</font>"
+                label += f"<br/><font point-size='9' color='#333333'>Comune: {m['comune']}</font>"
             if m.get("cf"):
-                label += f"<br/><font point-size='7' color='#555555'>CF: {m['cf']}</font>"
+                label += f"<br/><font point-size='8.5' color='#555555'>CF: {m['cf']}</font>"
             if m.get("telefono"):
-                label += f"<br/><font point-size='7.5' color='#333333'>📞 {m['telefono']}</font>"
-            if m.get("deceduto") in ["SÌ", "Sì", "SI", True, "True"]:
-                label += "<br/><font point-size='7.5' color='#d9534f'><b>🕊️ DECEDUTO/A</b></font>"
-
-            dot.node(str(m["id"]), label=f"<{label}>")
-
-        # Collegamenti
-        archi_agg = set()
-        for m in st.session_state.membri:
-            genitore_id = m.get("genitore")
-            figlio_id = m.get("id")
-            coniuge_id = m.get("coniuge")
-            
-            if genitore_id and figlio_id:
-                coppia = (str(genitore_id), str(figlio_id))
-                if coppia not in archi_agg:
-                    dot.edge(str(genitore_id), str(figlio_id), color="#555555", weight="1")
-                    archi_agg.add(coppia)
-                    
-            if coniuge_id and figlio_id:
-                coppia_c = tuple(sorted([str(figlio_id), str(coniuge_id)]))
-                if coppia_c not in archi_agg:
-                    dot.edge(str(figlio_id), str(coniuge_id), dir="none", style="dashed", color="#d9534f", weight="100", constraint="false")
-                    archi_agg.add(coppia_c)
-
-        try:
-            pdf_bytes = dot.pipe(format="pdf")
-            png_bytes = dot.pipe(format="png")
-        except Exception as e:
-            pdf_bytes = None
-            png_bytes = None
-
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
-            if pdf_bytes:
-                st.download_button(
-                    label="📄 Scarica File PDF (Pronto da condividere/stampare)",
-                    data=pdf_bytes,
-                    file_name="Albero_Genealogico_Carli.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-        with col_dl2:
-            if png_bytes:
-                st.download_button(
-                    label="🖼️ Scarica Immagine PNG (Ottimo per WhatsApp)",
-                    data=png_bytes,
-                    file_name="Albero_Genealogico_Carli.png",
-                    mime="image/png",
-                    use_container_width=True
-                )
-
-        st.graphviz_chart(dot, use_container_width=True)
-
-else:
-    st.info("L'albero è vuoto. Aggiungi il primo membro dalla barra laterale.")
+                label += f"<br/><font point-size='9' color='#333333'>Tel: {m['telefono']}</font
